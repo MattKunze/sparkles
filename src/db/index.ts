@@ -2,23 +2,41 @@ import { Draft, produce } from "immer";
 
 import { createEmptyDocument, NotebookDocument } from "@/types";
 
-const db: Record<string, NotebookDocument> = {};
+import {
+  getDb,
+  makeDbKey,
+  superjsonCreate,
+  superjsonSelect,
+  superjsonUpdate,
+} from "./surreal";
 
+const NOTEBOOK_TYPE = "notebook";
 export async function getDocumentIds() {
-  return Object.keys(db).sort();
+  const db = await getDb();
+  // leaky superjson implementation details
+  const [{ result }] = await db.query(`select json.id from ${NOTEBOOK_TYPE}`);
+  if (Array.isArray(result)) {
+    return result.map((row: any) => row.json.id).sort();
+  } else {
+    return [];
+  }
 }
 
 export async function getNotebookDocument(
   id: string,
   { throwIfNotFound = false } = {}
 ): Promise<NotebookDocument> {
-  if (!db[id]) {
+  const key = makeDbKey(NOTEBOOK_TYPE, id);
+  let doc = await superjsonSelect<NotebookDocument>(key);
+
+  if (!doc) {
     if (throwIfNotFound) {
       throw new Error("Document not found");
     }
-    db[id] = createEmptyDocument({ id });
+    doc = createEmptyDocument({ id });
+    await superjsonCreate(key, doc);
   }
-  return db[id];
+  return doc;
 }
 
 export async function mutateNotebookDocument(
@@ -36,6 +54,7 @@ export async function mutateNotebookDocument(
     mutate(draft);
     draft.timestamp = new Date();
   });
-  db[id] = updated;
+  const key = makeDbKey("notebook", id);
+  await superjsonUpdate(key, updated);
   return updated;
 }
