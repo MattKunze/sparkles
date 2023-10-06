@@ -16,6 +16,7 @@
     "@trpc/next": "^10.38.3",
     "@trpc/react-query": "^10.38.3",
     "@trpc/server": "^10.38.3",
+    "@uidotdev/usehooks": "^2.3.1",
     "daisyui": "3.7.3",
     "immer": "^10.0.2",
     "next": "13.4.19",

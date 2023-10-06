@@ -2,7 +2,7 @@
 
 import { createTRPCNext } from "@trpc/next";
 import { httpBatchLink, loggerLink } from "@trpc/react-query";
-// import superjson from "superjson";
+import superjson from "superjson";
 
 import type { AppRouter } from "@/server/routers/_app";
 
@@ -37,7 +37,7 @@ export const trpcClient = createTRPCNext<AppRouter>({
           },
         }),
       ],
-      // transformer: superjson,
+      transformer: superjson,
     };
   },
   // queryClientConfig: {

@@ -1,5 +1,7 @@
 import { z } from "zod";
+
 import { procedure, router } from "../trpc";
+import { notebookRouter } from "./notebook";
 
 export const appRouter = router({
   hello: procedure
@@ -11,8 +13,10 @@ export const appRouter = router({
     .query((opts) => {
       return {
         greeting: `hello ${opts.input.text}`,
+        timestamp: new Date(),
       };
     }),
+  notebook: notebookRouter,
 });
 
 // export type definition of API

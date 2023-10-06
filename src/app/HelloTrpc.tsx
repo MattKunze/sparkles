@@ -9,7 +9,9 @@ export default function HelloTrcp() {
   }
   return (
     <div>
-      <p>{hello.data.greeting}</p>
+      <p>
+        {hello.data.greeting} @ {hello.data.timestamp.toISOString()}
+      </p>
     </div>
   );
 }

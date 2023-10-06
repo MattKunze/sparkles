@@ -3,6 +3,7 @@ import { DeepReadonly } from "ts-essentials";
 
 export type NotebookCell = DeepReadonly<{
   id: string;
+  timestamp: Date;
   language: "markdown" | "typescript";
   content: string;
   results?: {
@@ -14,6 +15,7 @@ export type NotebookCell = DeepReadonly<{
 
 export type NotebookDocument = DeepReadonly<{
   id: string;
+  timestamp: Date;
   executionContext?: {
     environmentVariables?: Record<string, string>;
   };
@@ -32,6 +34,7 @@ export function createEmptyCell({
 } = {}): NotebookCell {
   return {
     id: ulid(),
+    timestamp: new Date(),
     language,
     content: defaultContent[language],
   };
@@ -48,6 +51,7 @@ export function createEmptyDocument({
 } = {}): NotebookDocument {
   return {
     id,
+    timestamp: new Date(),
     executionContext,
     cells: [createEmptyCell({ language })],
   };
