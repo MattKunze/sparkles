@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import { applyWSSHandler } from "@trpc/server/adapters/ws";
 import { WebSocketServer } from "ws";
 
+import { initialize as kernelInitialize } from "@/server/kernel";
 import { appRouter } from "@/server/routers/_app";
 
 dotenv.config();
@@ -11,6 +12,8 @@ const port = parseInt(process.env.WSS_PORT ?? "3001", 10);
 
 const wss = new WebSocketServer({ port });
 const handler = applyWSSHandler({ wss, router: appRouter });
+
+kernelInitialize();
 
 console.log(`✅ WebSocket Server listening on ws://localhost:${port}`);
 

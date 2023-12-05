@@ -1,20 +1,20 @@
 "use client";
-import { useDebounce } from "@uidotdev/usehooks";
-import Editor from "@monaco-editor/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import { NotebookCell, NotebookDocument } from "@/types";
+import { ExecutionResult, NotebookDocument } from "@/types";
 import { trpc } from "@/utils/trpcClient";
 
-const DefaultEditorOptions = {
-  minimap: { enabled: false },
-};
+import { CellEditor } from "../CellEditor";
+import { CellResult } from "../CellResult";
 
 type Props = {
   document: NotebookDocument;
 };
 export function NotebookEditor(props: Props) {
   const [document, setDocument] = useState<NotebookDocument>(props.document);
+  const [executionResults, setExecutionResults] = useState<
+    Record<string, ExecutionResult>
+  >({});
 
   const addCell = trpc.notebook.addCell.useMutation({
     onSuccess: setDocument,
@@ -25,11 +25,40 @@ export function NotebookEditor(props: Props) {
   const updateCell = trpc.notebook.updateCell.useMutation({
     onSuccess: setDocument,
   });
+  const evaluateCell = trpc.kernel.evaluateCell.useMutation({
+    onSuccess: (data) => {
+      setExecutionResults((prev) => ({
+        ...prev,
+        [data.cellId]: data,
+      }));
+    },
+  });
+  trpc.kernel.executionUpdates.useSubscription(undefined, {
+    onData: (data) => {
+      setExecutionResults((prev) => ({
+        ...prev,
+        [data.cellId]: data,
+      }));
+    },
+  });
 
   return (
     <>
       {document.cells.map((cell) => (
         <div key={cell.id} className="my-5">
+          {cell.language === "typescript" && (
+            <button
+              className="btn btn-sm btn-accent"
+              onClick={() =>
+                evaluateCell.mutate({
+                  documentId: document.id,
+                  cellId: cell.id,
+                })
+              }
+            >
+              Run
+            </button>
+          )}
           <span className="badge badge-primary">{cell.language}</span>
           <span
             className="badge badge-ghost"
@@ -54,6 +83,9 @@ export function NotebookEditor(props: Props) {
               })
             }
           />
+          {cell.id in executionResults && (
+            <CellResult result={executionResults[cell.id]} />
+          )}
         </div>
       ))}
       <button
@@ -68,41 +100,5 @@ export function NotebookEditor(props: Props) {
         +
       </button>
     </>
-  );
-}
-
-function CellEditor(props: {
-  cell: NotebookCell;
-  onUpdate: (content: string) => void;
-}) {
-  const [content, setContent] = useState<string | undefined>(
-    props.cell.content
-  );
-  const debouncedContent = useDebounce(content, 500);
-
-  const { onUpdate } = props;
-  useEffect(
-    () => {
-      if (debouncedContent && debouncedContent !== props.cell.content) {
-        onUpdate(debouncedContent);
-      }
-    },
-    // womp womp
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [debouncedContent]
-  );
-
-  return (
-    <Editor
-      path={props.cell.id}
-      height="100px"
-      language={props.cell.language}
-      value={props.cell.content}
-      options={DefaultEditorOptions}
-      onChange={setContent}
-      onValidate={(...args) => {
-        console.info("onValidate", args);
-      }}
-    />
   );
 }

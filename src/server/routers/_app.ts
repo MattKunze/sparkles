@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { procedure, router } from "../trpc";
+import { kernelRouter } from "./kernel";
 import { notebookRouter } from "./notebook";
 
 export const appRouter = router({
@@ -16,6 +17,7 @@ export const appRouter = router({
         timestamp: new Date(),
       };
     }),
+  kernel: kernelRouter,
   notebook: notebookRouter,
 });
 
