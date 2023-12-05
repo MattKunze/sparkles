@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "run-p dev:*",
+    "dev:app": "next dev",
+    "dev:wss": "nodemon -w src/server src/server/wsServer.ts",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "run-p start:*",
+    "start:app": "next start",
+    "start:wss": "node -r esbuild-register src/server/wsServer.ts",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.5.2",
@@ -18,15 +23,16 @@
     "@trpc/server": "^10.38.3",
     "@uidotdev/usehooks": "^2.3.1",
     "bufferutil": "^4.0.7",
-    "daisyui": "3.7.3",
+    "daisyui": "^3.7.3",
+    "dotenv": "^16.3.1",
     "immer": "^10.0.2",
-    "next": "13.4.19",
-    "postcss": "8.4.29",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
+    "next": "^13.4.19",
+    "postcss": "^8.4.29",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "superjson": "^1.13.1",
     "surrealdb.js": "^0.9.1",
-    "tailwindcss": "3.3.3",
+    "tailwindcss": "^3.3.3",
     "ulid": "^2.3.0",
     "utf-8-validate": "^6.0.3",
     "zod": "^3.22.2"
@@ -36,9 +42,16 @@
     "@types/react": "18.2.21",
     "@types/react-dom": "18.2.7",
     "autoprefixer": "10.4.15",
+    "esbuild-register": "3.5.0",
     "eslint": "8.49.0",
     "eslint-config-next": "13.4.19",
+    "nodemon": "3.0.2",
+    "npm-run-all": "4.1.5",
     "ts-essentials": "^9.4.0",
     "typescript": "5.2.2"
+  },
+  "nodemonConfig": {
+    "ext": "*.ts",
+    "exec": "node -r esbuild-register"
   }
 }

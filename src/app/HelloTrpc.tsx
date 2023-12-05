@@ -1,6 +1,6 @@
 "use client";
 
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/utils/trpcClient";
 
 export default function HelloTrcp() {
   const hello = trpc.hello.useQuery({ text: "client" });

@@ -1,6 +1,6 @@
 "use client";
 
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/utils/trpcClient";
 
 export default function EditorPage() {
   const documents = trpc.notebook.list.useQuery();

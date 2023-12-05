@@ -4,7 +4,7 @@ import Editor from "@monaco-editor/react";
 import { useEffect, useState } from "react";
 
 import { NotebookCell, NotebookDocument } from "@/types";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/utils/trpcClient";
 
 const DefaultEditorOptions = {
   minimap: { enabled: false },

@@ -4,10 +4,9 @@ import {
   getDocumentIds,
   getNotebookDocument,
   mutateNotebookDocument,
-} from "@/db";
+} from "@/server/db";
+import { procedure, router } from "@/server/trpc";
 import { createEmptyCell } from "@/types";
-
-import { procedure, router } from "../trpc";
 
 const DocumentRef = z.object({
   documentId: z.string(),
