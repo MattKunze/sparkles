@@ -27,17 +27,37 @@ export async function performExecution(filename: string) {
 
     await writeFile(
       path.resolve(path.dirname(filename), "output.json"),
-      superjson.stringify({ ...context.module.exports })
+      superjson.stringify({
+        result: "ok",
+        ...context.module.exports,
+      })
     );
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
+    await writeFile(
+      path.resolve(path.dirname(filename), "output.json"),
+      superjson.stringify({
+        result: "error",
+        error,
+        ...(error instanceof Error ? { stack: error.stack } : undefined),
+      })
+    );
   }
 }
+
+const sharedTypes = {
+  Date,
+  Error,
+  RegExp,
+  Map,
+  Set,
+  URL,
+};
 
 function createContext() {
   return {
     ...global,
-    Date,
+    ...sharedTypes,
     console,
     require,
     module: { exports: {} },
