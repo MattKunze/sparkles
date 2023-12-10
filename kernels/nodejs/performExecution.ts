@@ -1,5 +1,5 @@
 import * as esbuild from "esbuild";
-import { readFile, writeFile } from "fs/promises";
+import { appendFile, readFile, writeFile } from "fs/promises";
 import { createRequire } from "module";
 import path from "path";
 import prettier from "prettier";
@@ -22,7 +22,7 @@ export async function performExecution(filename: string) {
       sourcemap: true,
     });
 
-    const context = createContext();
+    const context = createContext(captureConsole(path.dirname(filename)));
     vm.runInNewContext(transformed.code, context);
 
     await writeFile(
@@ -45,6 +45,28 @@ export async function performExecution(filename: string) {
   }
 }
 
+const logLevels = ["info", "log", "warn", "debug", "error"] as const;
+
+function captureConsole(outputPath: string) {
+  const fileName = path.resolve(outputPath, "console.log");
+  // todo - queue and batch output
+  const appendLog = (level: keyof Console, ...args: any[]) => {
+    const line = [
+      new Date().toISOString(),
+      level.toUpperCase(),
+      JSON.stringify(args),
+      "\n",
+    ].join(" ");
+    appendFile(fileName, line);
+  };
+
+  // TODO - group and other fancy stuff?
+  return logLevels.reduce((acc, level) => {
+    acc[level] = appendLog.bind(null, level);
+    return acc;
+  }, {} as Console);
+}
+
 const sharedTypes = {
   Date,
   Error,
@@ -54,7 +76,7 @@ const sharedTypes = {
   URL,
 };
 
-function createContext() {
+function createContext(console: Console) {
   return {
     ...global,
     ...sharedTypes,

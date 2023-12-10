@@ -2,6 +2,11 @@ export type ExecutionResultBase = {
   executionId: string;
   cellId: string;
   timestamp: Date;
+  logs?: Array<{
+    timestamp: Date;
+    level: string;
+    args: unknown[];
+  }>;
 };
 
 export type ExecutionResultSuccess = ExecutionResultBase & {

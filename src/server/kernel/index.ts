@@ -5,7 +5,13 @@ import path from "path";
 import superjson from "superjson";
 import { ulid } from "ulid";
 
-import { ExecutionResult, ExecutionResultBase, NotebookCell } from "@/types";
+import {
+  ExecutionResult,
+  ExecutionResultBase,
+  ExecutionResultError,
+  ExecutionResultSuccess,
+  NotebookCell,
+} from "@/types";
 
 export const UPDATE_EVENT = "update";
 export const eventEmitter = new EventEmitter();
@@ -16,7 +22,7 @@ export function initialize() {
   workspacePath = String(process.env.EXECUTION_WORKSPACE);
 
   chokidar
-    .watch(`${workspacePath}/**/*.json`, {
+    .watch(`${workspacePath}/**/*.(json|log)`, {
       ignoreInitial: true,
       ignored: /meta\.json$/,
     })
@@ -56,12 +62,40 @@ async function emitUpdate(filename: string) {
       "utf-8"
     )
   ) as ExecutionResultBase;
-  const content = superjson.parse(await fs.readFile(filename, "utf-8"));
+  const raw = await fs.readFile(filename, "utf-8");
 
-  const result: ExecutionResult = {
-    ...meta,
-    duration: Date.now() - meta.timestamp.getTime(),
-    data: content,
-  };
+  const result = meta;
+
+  switch (path.extname(filename)) {
+    case ".json":
+      {
+        const duration = Date.now() - meta.timestamp.getTime();
+        const data = superjson.parse(raw) as any;
+        if (data.result === "ok") {
+          (result as ExecutionResultSuccess).duration = duration;
+          (result as ExecutionResultSuccess).data = data;
+        } else if (data.result === "error") {
+          (result as ExecutionResultError).duration = duration;
+          (result as ExecutionResultError).error = data.error;
+        }
+      }
+      break;
+    case ".log": {
+      // todo - only read new lines from log file
+      result.logs = raw.split("\n").filter(Boolean).map(parseLogLine);
+      break;
+    }
+  }
+
   eventEmitter.emit(UPDATE_EVENT, result);
 }
+
+const LOG_RE = /(?<timestamp>[.:\w-]+) (?<level>\w+) (?<args>.*)/;
+const parseLogLine = (line: string) => {
+  const { timestamp, level, args } = line.match(LOG_RE)?.groups ?? {};
+  return {
+    timestamp: new Date(timestamp),
+    level,
+    args: JSON.parse(args),
+  };
+};
