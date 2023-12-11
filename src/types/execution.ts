@@ -28,11 +28,14 @@ export type ExecutionErrorResult = {
 
 export type ExecutionDeferredResult = {
   executionId: string;
-  deferred: {
-    result: "resolved" | "rejected";
-    duration: number;
-    data: unknown;
-  };
+  deferred: Record<
+    string, // export key
+    {
+      result: "resolved" | "rejected";
+      duration: number;
+      data: unknown;
+    }
+  >;
 };
 
 export type ExecutionResult =

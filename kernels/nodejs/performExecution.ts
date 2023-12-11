@@ -5,6 +5,7 @@ import prettier from "prettier";
 import vm from "node:vm";
 
 import { captureConsole } from "./captureConsole";
+import { capturePromise } from "./capturePromise";
 import { createExecutionContext } from "./createExecutionContext";
 import { defaultExportPlugin } from "./defaultExportPlugin";
 import { outputResult } from "./outputResult";
@@ -37,30 +38,10 @@ export async function performExecution(filename: string) {
       },
     });
 
-    if (
-      "default" in context.module.exports &&
-      context.module.exports["default"] instanceof Promise
-    ) {
-      const outputDeferredResult = (
-        result: "resolved" | "rejected",
-        data: unknown
-      ) => {
-        console.info({ result, data });
-        outputResult(executionPath, {
-          deferred: {
-            result,
-            duration: Date.now() - start,
-            data,
-          },
-        });
-      };
-
-      context.module.exports["default"]
-        .then(outputDeferredResult.bind(null, "resolved"), () =>
-          console.info("also rejected")
-        )
-        // todo - this doesn't work
-        .catch(outputDeferredResult.bind(null, "rejected"));
+    for (const [key, value] of Object.entries(context.module.exports)) {
+      if (value instanceof Promise) {
+        capturePromise(executionPath, key, start, value);
+      }
     }
   } catch (error) {
     console.error(error);
