@@ -6,10 +6,9 @@ import superjson from "superjson";
 import { ulid } from "ulid";
 
 import {
+  ExecutionMetaInfo,
   ExecutionResult,
-  ExecutionResultBase,
-  ExecutionResultError,
-  ExecutionResultSuccess,
+  ExecutionLogResult,
   NotebookCell,
 } from "@/types";
 
@@ -32,12 +31,12 @@ export function initialize() {
 
 export async function enqueueExecution(
   cell: NotebookCell
-): Promise<ExecutionResult> {
+): Promise<ExecutionMetaInfo> {
   const executionId = ulid();
 
   await fs.mkdir(path.resolve(workspacePath, executionId));
 
-  const meta: ExecutionResultBase = {
+  const meta: ExecutionMetaInfo = {
     executionId,
     cellId: cell.id,
     timestamp: new Date(),
@@ -56,39 +55,42 @@ export async function enqueueExecution(
 }
 
 async function emitUpdate(filename: string) {
-  const meta = superjson.parse(
-    await fs.readFile(
-      path.resolve(path.dirname(filename), "meta.json"),
-      "utf-8"
-    )
-  ) as ExecutionResultBase;
+  const executionId = path.dirname(filename).split(path.sep).pop()!;
   const raw = await fs.readFile(filename, "utf-8");
+  if (!raw) {
+    console.error("Received empty update");
+    return;
+  }
 
-  const result = meta;
+  let result: ExecutionResult;
 
   switch (path.extname(filename)) {
     case ".json":
       {
-        const duration = Date.now() - meta.timestamp.getTime();
-        const data = superjson.parse(raw) as any;
-        if (data.result === "ok") {
-          (result as ExecutionResultSuccess).duration = duration;
-          (result as ExecutionResultSuccess).data = data;
-        } else if (data.result === "error") {
-          (result as ExecutionResultError).duration = duration;
-          (result as ExecutionResultError).error = data.error;
-        }
+        const json = superjson.parse(raw) as any;
+        result = {
+          executionId,
+          ...json,
+        };
       }
       break;
     case ".log": {
-      // todo - only read new lines from log file
-      result.logs = raw.split("\n").filter(Boolean).map(parseLogLine);
+      result = {
+        executionId,
+        logs: parseLogResult(raw),
+      };
       break;
     }
+    default:
+      throw new Error(`Unexpected file extension: ${path.extname(filename)}`);
   }
 
+  console.info({ result });
   eventEmitter.emit(UPDATE_EVENT, result);
 }
+
+const parseLogResult = (raw: string) =>
+  raw.split("\n").filter(Boolean).map(parseLogLine);
 
 const LOG_RE = /(?<timestamp>[.:\w-]+) (?<level>\w+) (?<args>.*)/;
 const parseLogLine = (line: string) => {

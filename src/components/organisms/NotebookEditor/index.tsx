@@ -1,11 +1,11 @@
 "use client";
 import { useState } from "react";
 
-import { ExecutionResult, NotebookDocument } from "@/types";
+import { NotebookDocument } from "@/types";
 import { trpc } from "@/utils/trpcClient";
 
 import { CellEditor } from "../CellEditor";
-import { CellResult } from "../CellResult";
+import { CellResult, CellExecutionResults, mergeResults } from "../CellResult";
 
 type Props = {
   document: NotebookDocument;
@@ -13,7 +13,7 @@ type Props = {
 export function NotebookEditor(props: Props) {
   const [document, setDocument] = useState<NotebookDocument>(props.document);
   const [executionResults, setExecutionResults] = useState<
-    Record<string, ExecutionResult>
+    Record<string, CellExecutionResults>
   >({});
 
   const addCell = trpc.notebook.addCell.useMutation({
@@ -35,10 +35,19 @@ export function NotebookEditor(props: Props) {
   });
   trpc.kernel.executionUpdates.useSubscription(undefined, {
     onData: (data) => {
-      setExecutionResults((prev) => ({
-        ...prev,
-        [data.cellId]: data,
-      }));
+      setExecutionResults((prev) => {
+        const prevData = Object.values(prev).find(
+          (t) => t.executionId === data.executionId
+        );
+        if (!prevData) {
+          console.error("Unknown execution", data);
+          return prev;
+        }
+        return {
+          ...prev,
+          [prevData.cellId]: mergeResults(prevData, data),
+        };
+      });
     },
   });
 

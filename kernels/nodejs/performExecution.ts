@@ -1,15 +1,18 @@
 import * as esbuild from "esbuild";
-import { appendFile, readFile, writeFile } from "fs/promises";
-import { createRequire } from "module";
+import { readFile } from "fs/promises";
 import path from "path";
 import prettier from "prettier";
-import { parsers } from "prettier/plugins/typescript";
-import superjson from "superjson";
 import vm from "node:vm";
 
-const require = createRequire(import.meta.url);
+import { captureConsole } from "./captureConsole";
+import { createExecutionContext } from "./createExecutionContext";
+import { defaultExportPlugin } from "./defaultExportPlugin";
+import { outputResult } from "./outputResult";
 
 export async function performExecution(filename: string) {
+  const executionPath = path.dirname(filename);
+  const start = Date.now();
+
   try {
     const content = await readFile(filename, "utf-8");
     const formatted = await prettier.format(content, {
@@ -22,88 +25,58 @@ export async function performExecution(filename: string) {
       sourcemap: true,
     });
 
-    const context = createContext(captureConsole(path.dirname(filename)));
+    const context = createExecutionContext({
+      console: captureConsole(executionPath),
+    });
     vm.runInNewContext(transformed.code, context);
 
-    await writeFile(
-      path.resolve(path.dirname(filename), "output.json"),
-      superjson.stringify({
-        result: "ok",
-        ...context.module.exports,
-      })
-    );
+    await outputResult(executionPath, {
+      success: {
+        duration: Date.now() - start,
+        data: context.module.exports,
+      },
+    });
+
+    if (
+      "default" in context.module.exports &&
+      context.module.exports["default"] instanceof Promise
+    ) {
+      const outputDeferredResult = (
+        result: "resolved" | "rejected",
+        data: unknown
+      ) => {
+        console.info({ result, data });
+        outputResult(executionPath, {
+          deferred: {
+            result,
+            duration: Date.now() - start,
+            data,
+          },
+        });
+      };
+
+      context.module.exports["default"]
+        .then(outputDeferredResult.bind(null, "resolved"), () =>
+          console.info("also rejected")
+        )
+        // todo - this doesn't work
+        .catch(outputDeferredResult.bind(null, "rejected"));
+    }
   } catch (error) {
     console.error(error);
-    await writeFile(
-      path.resolve(path.dirname(filename), "output.json"),
-      superjson.stringify({
-        result: "error",
-        error,
+    await outputResult(executionPath, {
+      error: {
+        duration: Date.now() - start,
+        data: formatError(error),
         ...(error instanceof Error ? { stack: error.stack } : undefined),
-      })
-    );
+      },
+    });
   }
 }
 
-const logLevels = ["info", "log", "warn", "debug", "error"] as const;
-
-function captureConsole(outputPath: string) {
-  const fileName = path.resolve(outputPath, "console.log");
-  // todo - queue and batch output
-  const appendLog = (level: keyof Console, ...args: any[]) => {
-    const line = [
-      new Date().toISOString(),
-      level.toUpperCase(),
-      JSON.stringify(args),
-      "\n",
-    ].join(" ");
-    appendFile(fileName, line);
-  };
-
-  // TODO - group and other fancy stuff?
-  return logLevels.reduce((acc, level) => {
-    acc[level] = appendLog.bind(null, level);
-    return acc;
-  }, {} as Console);
-}
-
-const sharedTypes = {
-  Date,
-  Error,
-  RegExp,
-  Map,
-  Set,
-  URL,
-};
-
-function createContext(console: Console) {
-  return {
-    ...global,
-    ...sharedTypes,
-    console,
-    require,
-    module: { exports: {} },
-  };
-}
-
-const defaultExportPlugin: prettier.Plugin = {
-  parsers: {
-    typescript: {
-      ...parsers.typescript,
-      parse: (text, options) => {
-        const ast = parsers.typescript.parse(text, options);
-
-        // convert final expression to a default export if possible
-        const finalStatement = ast.body[ast.body.length - 1];
-        if (finalStatement.type === "ExpressionStatement") {
-          finalStatement.type = "ExportDefaultDeclaration";
-          finalStatement.exportKind = "value";
-          finalStatement.declaration = finalStatement.expression;
-          delete finalStatement.expression;
-        }
-
-        return ast;
-      },
-    },
-  },
+const formatError = (error: unknown) => {
+  if (error instanceof Error) {
+    return error;
+  }
+  return String(error);
 };

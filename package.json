@@ -28,6 +28,7 @@
     "daisyui": "^3.7.3",
     "dotenv": "^16.3.1",
     "immer": "^10.0.2",
+    "lodash": "^4.17.21",
     "next": "^13.4.19",
     "postcss": "^8.4.29",
     "prettier": "^3.1.0",
@@ -43,6 +44,7 @@
     "zod": "^3.22.2"
   },
   "devDependencies": {
+    "@types/lodash": "4.14.202",
     "@types/node": "20.6.0",
     "@types/react": "18.2.21",
     "@types/react-dom": "18.2.7",
