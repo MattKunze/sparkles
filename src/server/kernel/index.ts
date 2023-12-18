@@ -85,7 +85,6 @@ async function emitUpdate(filename: string) {
       throw new Error(`Unexpected file extension: ${path.extname(filename)}`);
   }
 
-  console.info({ result });
   eventEmitter.emit(UPDATE_EVENT, result);
 }
 

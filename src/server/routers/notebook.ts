@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  deleteNotebookDocument,
   getDocumentIds,
   getNotebookDocument,
   mutateNotebookDocument,
@@ -22,6 +23,13 @@ export const notebookRouter = router({
       })
     )
     .query((opts) => getNotebookDocument(opts.input.id)),
+  delete: procedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .mutation((opts) => deleteNotebookDocument(opts.input.id)),
   addCell: procedure
     .input(
       DocumentRef.extend({

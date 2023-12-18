@@ -39,6 +39,11 @@ export async function getNotebookDocument(
   return doc;
 }
 
+export async function deleteNotebookDocument(id: string) {
+  const db = await getDb();
+  await db.delete(makeDbKey(NOTEBOOK_TYPE, id));
+}
+
 export async function mutateNotebookDocument(
   id: string,
   timestamp: Date,

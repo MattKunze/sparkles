@@ -7,7 +7,7 @@ function ClientProviders(props: { children: React.ReactNode }) {
   return (
     <>
       {props.children}
-      <ReactQueryDevtools initialIsOpen={false} />
+      <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
     </>
   );
 }

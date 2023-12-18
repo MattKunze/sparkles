@@ -1,20 +1,29 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { NotebookDocument } from "@/types";
 import { trpc } from "@/utils/trpcClient";
 
 import { CellEditor } from "../CellEditor";
 import { CellResult, CellExecutionResults, mergeResults } from "../CellResult";
+import { DocumentHeader } from "../DocumentHeader";
 
 type Props = {
   document: NotebookDocument;
 };
 export function NotebookEditor(props: Props) {
+  const utils = trpc.useContext();
   const [document, setDocument] = useState<NotebookDocument>(props.document);
   const [executionResults, setExecutionResults] = useState<
     Record<string, CellExecutionResults>
   >({});
+
+  useEffect(() => {
+    const current = utils.notebook.list.getData();
+    if (!current || !current.includes(document.id)) {
+      utils.notebook.list.invalidate();
+    }
+  }, [document.id, utils.notebook.list]);
 
   const addCell = trpc.notebook.addCell.useMutation({
     onSuccess: setDocument,
@@ -53,6 +62,7 @@ export function NotebookEditor(props: Props) {
 
   return (
     <>
+      <DocumentHeader document={document} />
       {document.cells.map((cell) => (
         <div key={cell.id} className="my-5">
           {cell.language === "typescript" && (

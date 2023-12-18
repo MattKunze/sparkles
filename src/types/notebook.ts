@@ -1,3 +1,4 @@
+import Chance from "chance";
 import { ulid } from "ulid";
 import { DeepReadonly } from "ts-essentials";
 
@@ -55,4 +56,16 @@ export function createEmptyDocument({
     executionContext,
     cells: [createEmptyCell({ language })],
   };
+}
+
+const chance = new Chance();
+
+export function randomDocumentId() {
+  const key = chance.pickone([
+    "animal",
+    "company",
+    "name",
+    "profession",
+  ] as const);
+  return chance[key]();
 }
