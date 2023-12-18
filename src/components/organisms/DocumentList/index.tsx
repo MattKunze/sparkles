@@ -1,21 +1,29 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { clsx } from "clsx";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
 import { PlusCircle } from "@/components/icons/PlusCircle";
 import { randomDocumentId } from "@/types";
 import { trpc } from "@/utils/trpcClient";
 
 export default function DocumentList() {
+  const pathname = usePathname();
   const router = useRouter();
   const documents = trpc.notebook.list.useQuery();
   return (
     <ul className="menu w-72 rounded-box">
       {documents.data ? (
-        documents.data.map((id) => (
-          <li key={id}>
-            <a href={`/editor/${encodeURIComponent(id)}`}>{id}</a>
-          </li>
-        ))
+        documents.data.map((id) => {
+          const href = `/editor/${encodeURIComponent(id)}`;
+          return (
+            <li key={id}>
+              <Link href={href} className={clsx({ active: href === pathname })}>
+                {id}
+              </Link>
+            </li>
+          );
+        })
       ) : (
         <LoadingSkeleton />
       )}

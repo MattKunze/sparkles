@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import { trpc } from "@/utils/trpcClient";
 
@@ -11,7 +12,7 @@ export default function EditorPage() {
         <ul>
           {documents.data.map((id) => (
             <li key={id}>
-              <a href={`./editor/${encodeURIComponent(id)}`}>{id}</a>
+              <Link href={`./editor/${encodeURIComponent(id)}`}>{id}</Link>
             </li>
           ))}
         </ul>
