@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
+import { PlusCircle } from "@/components/icons/PlusCircle";
 import { NotebookDocument } from "@/types";
 import { trpc } from "@/utils/trpcClient";
 
@@ -64,35 +65,22 @@ export function NotebookEditor(props: Props) {
     <>
       <DocumentHeader document={document} />
       {document.cells.map((cell) => (
-        <div key={cell.id} className="my-5">
-          {cell.language === "typescript" && (
-            <button
-              className="btn btn-sm btn-accent"
-              onClick={() =>
-                evaluateCell.mutate({
-                  documentId: document.id,
-                  cellId: cell.id,
-                })
-              }
-            >
-              Run
-            </button>
-          )}
-          <span className="badge badge-primary">{cell.language}</span>
-          <span
-            className="badge badge-ghost"
-            onClick={() =>
+        <div key={cell.id} className="flex flex-col my-5 pr-3">
+          <CellEditor
+            cell={cell}
+            onDelete={() =>
               deleteCell.mutate({
                 documentId: document.id,
                 documentTimestamp: document.timestamp,
                 cellId: cell.id,
               })
             }
-          >
-            {cell.id.slice(-6)}
-          </span>
-          <CellEditor
-            cell={cell}
+            onEvaluate={() =>
+              evaluateCell.mutate({
+                documentId: document.id,
+                cellId: cell.id,
+              })
+            }
             onUpdate={(content) =>
               updateCell.mutate({
                 documentId: document.id,
@@ -103,21 +91,26 @@ export function NotebookEditor(props: Props) {
             }
           />
           {cell.id in executionResults && (
-            <CellResult result={executionResults[cell.id]} />
+            <>
+              <div className="h-2"></div>
+              <CellResult result={executionResults[cell.id]} />
+            </>
           )}
         </div>
       ))}
-      <button
-        className="btn btn-primary"
-        onClick={() =>
-          addCell.mutate({
-            documentId: document.id,
-            documentTimestamp: document.timestamp,
-          })
-        }
-      >
-        +
-      </button>
+      <div className="flex flex-row justify-center">
+        <button
+          className="btn btn-primary btn-outline btn-sm px-10"
+          onClick={() =>
+            addCell.mutate({
+              documentId: document.id,
+              documentTimestamp: document.timestamp,
+            })
+          }
+        >
+          <PlusCircle />
+        </button>
+      </div>
     </>
   );
 }
