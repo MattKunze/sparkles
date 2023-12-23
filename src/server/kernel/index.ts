@@ -1,27 +1,26 @@
 import chokidar from "chokidar";
+import Docker from "dockerode";
 import { EventEmitter } from "events";
 import fs from "fs/promises";
 import path from "path";
 import superjson from "superjson";
 import { ulid } from "ulid";
 
-import {
-  ExecutionMetaInfo,
-  ExecutionResult,
-  ExecutionLogResult,
-  NotebookCell,
-} from "@/types";
+import { ExecutionMetaInfo, ExecutionResult, NotebookCell } from "@/types";
 
 export const UPDATE_EVENT = "update";
 export const eventEmitter = new EventEmitter();
 
-let workspacePath: string;
+const docker = new Docker();
+const DockerImage = "repl-notebook:kernel-nodejs";
+
+let workspaceRoot: string;
 
 export function initialize() {
-  workspacePath = String(process.env.EXECUTION_WORKSPACE);
+  workspaceRoot = String(process.env.EXECUTION_WORKSPACE);
 
   chokidar
-    .watch(`${workspacePath}/**/*.(json|log)`, {
+    .watch(`${workspaceRoot}/**/*.(json|log)`, {
       ignoreInitial: true,
       ignored: /meta\.json$/,
     })
@@ -29,12 +28,63 @@ export function initialize() {
     .on("change", emitUpdate);
 }
 
+export async function listContainers() {
+  const list = await docker.listContainers();
+  return list.filter((t) => "repl-notebook.kernel" in t.Labels);
+}
+
+export async function startContainer(documentId: string) {
+  const workspacePath = resolveWorkspacePath(documentId);
+  await fs.mkdir(workspacePath, { recursive: true });
+
+  console.info(`Starting container: ${documentId}`);
+  const container = await docker.createContainer({
+    Image: DockerImage,
+    HostConfig: {
+      Binds: [`${workspacePath}:/workspace`],
+    },
+    Labels: {
+      "repl-notebook.kernel": "nodejs",
+      "repl-notebook.document": documentId,
+    },
+  });
+  await container.start();
+  return container;
+}
+
+export async function deleteContainer(id: string) {
+  const container = docker.getContainer(id);
+  // note we don't wait here so the mutation returns immediately
+  container.stop().then(() => {
+    container.remove();
+  });
+}
+
+export async function findContainer(documentId: string) {
+  const containers = await listContainers();
+  return containers.find(
+    (t) => t.Labels["repl-notebook.document"] === documentId
+  );
+}
+
 export async function enqueueExecution(
+  documentId: string,
   cell: NotebookCell
 ): Promise<ExecutionMetaInfo> {
+  if (!(await findContainer(documentId))) {
+    await startContainer(documentId);
+
+    // do better :/
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
   const executionId = ulid();
 
-  await fs.mkdir(path.resolve(workspacePath, executionId));
+  const executionPath = path.resolve(
+    resolveWorkspacePath(documentId),
+    executionId
+  );
+  await fs.mkdir(executionPath);
 
   const meta: ExecutionMetaInfo = {
     executionId,
@@ -43,15 +93,16 @@ export async function enqueueExecution(
   };
 
   await fs.writeFile(
-    path.resolve(workspacePath, executionId, "meta.json"),
+    path.resolve(executionPath, "meta.json"),
     superjson.stringify(meta)
   );
-  await fs.writeFile(
-    path.resolve(workspacePath, executionId, "index.ts"),
-    cell.content
-  );
+  await fs.writeFile(path.resolve(executionPath, "index.ts"), cell.content);
 
   return meta;
+}
+
+function resolveWorkspacePath(documentId: string) {
+  return path.resolve(workspaceRoot, documentId);
 }
 
 async function emitUpdate(filename: string) {

@@ -22,10 +22,15 @@ const q = new Queue({
 });
 
 function enqueue(path: string) {
+  console.info(`Enqueuing job: ${path}`);
   q.push(performExecution.bind(null, path));
 }
 
 chokidar
-  .watch(`${argv["watch-path"]}/**/*.ts`, { ignoreInitial: true })
+  .watch(`${argv["watch-path"]}/**/*.ts`, {
+    ignoreInitial: true,
+  })
   .on("add", enqueue)
   .on("change", enqueue);
+
+console.info(`Watching path: ${argv["watch-path"]}`);

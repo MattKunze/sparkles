@@ -14,6 +14,8 @@ export async function performExecution(filename: string) {
   const executionPath = path.dirname(filename);
   const start = Date.now();
 
+  console.info(`Executing job: ${filename}`);
+
   try {
     const content = await readFile(filename, "utf-8");
     const formatted = await prettier.format(content, {

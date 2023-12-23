@@ -2,12 +2,22 @@ import { observable } from "@trpc/server/observable";
 import { z } from "zod";
 
 import { getNotebookDocument } from "@/server/db";
-import { enqueueExecution, eventEmitter, UPDATE_EVENT } from "@/server/kernel";
+import {
+  deleteContainer,
+  enqueueExecution,
+  eventEmitter,
+  listContainers,
+  UPDATE_EVENT,
+} from "@/server/kernel";
 import { ExecutionResult } from "@/types";
 
 import { procedure, router } from "../trpc";
 
 export const kernelRouter = router({
+  instances: procedure.query(listContainers),
+  deleteInstance: procedure
+    .input(z.string())
+    .mutation(async (opts) => deleteContainer(opts.input)),
   evaluateCell: procedure
     .input(
       z.object({
@@ -25,7 +35,7 @@ export const kernelRouter = router({
         throw new Error("Cell not found");
       }
 
-      return enqueueExecution(current.cells[pos]);
+      return enqueueExecution(documentId, current.cells[pos]);
     }),
   executionUpdates: procedure.subscription(() =>
     observable<ExecutionResult>((emit) => {
