@@ -45,23 +45,26 @@ export function NotebookEditor(props: Props) {
       }));
     },
   });
-  trpc.kernel.executionUpdates.useSubscription(undefined, {
-    onData: (data) => {
-      setExecutionResults((prev) => {
-        const prevData = Object.values(prev).find(
-          (t) => t.executionId === data.executionId
-        );
-        if (!prevData) {
-          console.error("Unknown execution", data);
-          return prev;
-        }
-        return {
-          ...prev,
-          [prevData.cellId]: mergeResults(prevData, data),
-        };
-      });
-    },
-  });
+  trpc.kernel.executionUpdates.useSubscription(
+    { documentId: document.id },
+    {
+      onData: (data) => {
+        setExecutionResults((prev) => {
+          const prevData = Object.values(prev).find(
+            (t) => t.executionId === data.executionId
+          );
+          if (!prevData) {
+            console.error("Unknown execution", data);
+            return prev;
+          }
+          return {
+            ...prev,
+            [prevData.cellId]: mergeResults(prevData, data),
+          };
+        });
+      },
+    }
+  );
 
   return (
     <>

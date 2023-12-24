@@ -1,7 +1,7 @@
 import { observable } from "@trpc/server/observable";
 import { z } from "zod";
 
-import { getNotebookDocument } from "@/server/db";
+import { checkAuthorization, getNotebookDocument } from "@/server/db";
 import {
   deleteContainer,
   enqueueExecution,
@@ -37,17 +37,37 @@ export const kernelRouter = router({
 
       return enqueueExecution(opts.ctx, documentId, current.cells[pos]);
     }),
-  executionUpdates: procedure.subscription(() =>
-    observable<ExecutionResult>((emit) => {
-      const onUpdate = (data: ExecutionResult) => {
-        emit.next(data);
-      };
-      eventEmitter.on(UPDATE_EVENT, onUpdate);
+  executionUpdates: procedure
+    .input(
+      z.object({
+        documentId: z.string(),
+      })
+    )
+    .subscription((opts) =>
+      observable<ExecutionResult>((emit) => {
+        // can't use async auth check here so this seems the best alternative
+        let authorized = false;
+        checkAuthorization(opts.ctx, opts.input.documentId)
+          .then(() => {
+            authorized = true;
+          })
+          .catch(() => {
+            console.error(
+              "Unauthorized subscription: ${opts.input.documentId}"
+            );
+          });
 
-      // unsubscribe function when client disconnects or stops subscribing
-      return () => {
-        eventEmitter.off(UPDATE_EVENT, onUpdate);
-      };
-    })
-  ),
+        const onUpdate = (updateDocumentId: string, data: ExecutionResult) => {
+          if (authorized && updateDocumentId === opts.input.documentId) {
+            emit.next(data);
+          }
+        };
+        eventEmitter.on(UPDATE_EVENT, onUpdate);
+
+        // unsubscribe function when client disconnects or stops subscribing
+        return () => {
+          eventEmitter.off(UPDATE_EVENT, onUpdate);
+        };
+      })
+    ),
 });

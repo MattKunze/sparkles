@@ -118,7 +118,10 @@ function resolveWorkspacePath(documentId: string) {
 }
 
 async function emitUpdate(filename: string) {
-  const executionId = path.dirname(filename).split(path.sep).pop()!;
+  const [documentId, executionId] = path
+    .dirname(filename)
+    .split(path.sep)
+    .slice(-2);
   const raw = await fs.readFile(filename, "utf-8");
   if (!raw) {
     console.error("Received empty update");
@@ -148,7 +151,7 @@ async function emitUpdate(filename: string) {
       throw new Error(`Unexpected file extension: ${path.extname(filename)}`);
   }
 
-  eventEmitter.emit(UPDATE_EVENT, result);
+  eventEmitter.emit(UPDATE_EVENT, documentId, result);
 }
 
 const parseLogResult = (raw: string) =>

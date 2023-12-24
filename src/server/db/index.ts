@@ -61,8 +61,24 @@ export async function getNotebookDocument(
 }
 
 export async function deleteNotebookDocument(ctx: Context, id: string) {
+  await checkAuthorization(ctx, id);
+
   const db = await getDb();
   await db.delete(makeDbKey(NOTEBOOK_TYPE, id));
+}
+
+export async function checkAuthorization(ctx: Context, documentId: string) {
+  let [doc] = await superjsonQuery(NOTEBOOK_TYPE, ["id"], {
+    whereClause: "json.owner = $owner and id = $id",
+    variables: {
+      owner: ctx.session.user.email,
+      id: makeDbKey(NOTEBOOK_TYPE, documentId),
+    },
+  });
+
+  if (!doc) {
+    throw new Error("Unauthorized");
+  }
 }
 
 export async function mutateNotebookDocument(
