@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import { applyWSSHandler } from "@trpc/server/adapters/ws";
 import { WebSocketServer } from "ws";
 
+import { Context, createContext } from "@/server/context";
 import { initialize as kernelInitialize } from "@/server/kernel";
 import { appRouter } from "@/server/routers/_app";
 
@@ -11,7 +12,7 @@ dotenv.config({ path: ".env.local", override: true });
 const port = parseInt(process.env.WSS_PORT ?? "3001", 10);
 
 const wss = new WebSocketServer({ port });
-const handler = applyWSSHandler({ wss, router: appRouter });
+const handler = applyWSSHandler({ wss, createContext, router: appRouter });
 
 kernelInitialize();
 

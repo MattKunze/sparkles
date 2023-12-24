@@ -3,6 +3,7 @@ import {
   fetchRequestHandler,
 } from "@trpc/server/adapters/fetch";
 
+// import { Context, createContext } from "@/server/context";
 import { appRouter } from "@/server/routers/_app";
 
 const handler = (request: Request) => {
@@ -10,10 +11,9 @@ const handler = (request: Request) => {
     endpoint: "/api/trpc",
     req: request,
     router: appRouter,
-    createContext: function (
-      _opts: FetchCreateContextFnOptions
-    ): object | Promise<object> {
-      return {};
+    createContext: function (_opts: FetchCreateContextFnOptions) {
+      // todo with ssr
+      return { session: null };
     },
   });
 };

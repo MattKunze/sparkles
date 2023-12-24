@@ -1,12 +1,13 @@
 "use client";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { SessionProvider } from "next-auth/react";
 
 import { trpc } from "@/utils/trpcClient";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 function ClientProviders(props: { children: React.ReactNode }) {
   return (
     <>
-      {props.children}
+      <SessionProvider>{props.children}</SessionProvider>
       <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
     </>
   );

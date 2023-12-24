@@ -65,7 +65,7 @@ export function NotebookEditor(props: Props) {
     <>
       <DocumentHeader document={document} />
       {document.cells.map((cell) => (
-        <div key={cell.id} className="flex flex-col my-5 pr-3">
+        <div key={cell.id} className="flex flex-col my-5 pr-3 gap-2">
           <CellEditor
             cell={cell}
             onDelete={() =>
@@ -92,7 +92,6 @@ export function NotebookEditor(props: Props) {
           />
           {cell.id in executionResults && (
             <>
-              <div className="h-2"></div>
               <CellResult result={executionResults[cell.id]} />
             </>
           )}

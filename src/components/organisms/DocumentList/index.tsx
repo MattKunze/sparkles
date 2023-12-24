@@ -12,7 +12,7 @@ export default function DocumentList() {
   const router = useRouter();
   const documents = trpc.notebook.list.useQuery();
   return (
-    <ul className="menu w-72 rounded-box">
+    <ul className="menu w-72 rounded-box grow">
       {documents.data ? (
         documents.data.map((id) => {
           const href = `/editor/${encodeURIComponent(id)}`;
