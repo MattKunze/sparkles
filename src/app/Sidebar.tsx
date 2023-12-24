@@ -7,7 +7,7 @@ export default function Sidebar() {
       <input
         type="text"
         placeholder="Search"
-        className="input input-ghost w-full"
+        className="input input-ghost w-full shrink-0"
       />
       <DocumentList />
       <UserLinks />

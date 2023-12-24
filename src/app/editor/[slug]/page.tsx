@@ -1,12 +1,26 @@
 "use client";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 import { NotebookEditor } from "@/components/organisms/NotebookEditor";
 import { trpc } from "@/utils/trpcClient";
 
 export default function Page({ params }: { params: { slug: string } }) {
+  const pathname = usePathname();
+  const router = useRouter();
   const document = trpc.notebook.get.useQuery({
-    id: decodeURIComponent(params.slug),
+    nameOrId: decodeURIComponent(params.slug),
   });
+
+  useEffect(() => {
+    if (document.status === "success") {
+      const href = `/editor/${encodeURIComponent(document.data.id)}`;
+      if (href !== pathname) {
+        router.replace(href);
+      }
+    }
+  }, [document.status, document.data?.id, pathname, router]);
+
   return (
     <div className="container mx-auto">
       {document.data ? (

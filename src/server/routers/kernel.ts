@@ -14,10 +14,10 @@ import { ExecutionResult } from "@/types";
 import { procedure, router } from "../trpc";
 
 export const kernelRouter = router({
-  instances: procedure.query(listContainers),
+  instances: procedure.query((opts) => listContainers(opts.ctx)),
   deleteInstance: procedure
     .input(z.string())
-    .mutation(async (opts) => deleteContainer(opts.input)),
+    .mutation(async (opts) => deleteContainer(opts.ctx, opts.input)),
   evaluateCell: procedure
     .input(
       z.object({
@@ -27,7 +27,7 @@ export const kernelRouter = router({
     )
     .mutation(async (opts) => {
       const { documentId, cellId } = opts.input;
-      const current = await getNotebookDocument(documentId, {
+      const current = await getNotebookDocument(opts.ctx, documentId, {
         throwIfNotFound: true,
       });
       const pos = current.cells.findIndex((c) => c.id === cellId);
@@ -35,7 +35,7 @@ export const kernelRouter = router({
         throw new Error("Cell not found");
       }
 
-      return enqueueExecution(documentId, current.cells[pos]);
+      return enqueueExecution(opts.ctx, documentId, current.cells[pos]);
     }),
   executionUpdates: procedure.subscription(() =>
     observable<ExecutionResult>((emit) => {

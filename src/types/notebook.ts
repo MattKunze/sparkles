@@ -7,15 +7,12 @@ export type NotebookCell = DeepReadonly<{
   timestamp: Date;
   language: "markdown" | "typescript";
   content: string;
-  results?: {
-    status: "ok" | "error" | "running";
-    content: string;
-    timestamp: number;
-  };
 }>;
 
 export type NotebookDocument = DeepReadonly<{
   id: string;
+  owner: string;
+  name: string;
   timestamp: Date;
   executionContext?: {
     environmentVariables?: Record<string, string>;
@@ -42,24 +39,28 @@ export function createEmptyCell({
 }
 
 export function createEmptyDocument({
-  id = ulid(),
+  owner,
+  name,
   executionContext,
   language,
 }: {
-  id?: string;
+  owner: string;
+  name: string;
   executionContext?: NotebookDocument["executionContext"];
   language?: NotebookCell["language"];
-} = {}): NotebookDocument {
+}): NotebookDocument {
   return {
-    id,
+    id: ulid(),
+    owner,
+    name,
     timestamp: new Date(),
     executionContext,
     cells: [createEmptyCell({ language })],
   };
 }
 
+// meh
 const chance = new Chance();
-
 export function randomDocumentId() {
   const key = chance.pickone([
     "animal",

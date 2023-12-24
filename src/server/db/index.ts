@@ -1,5 +1,7 @@
 import { Draft, produce } from "immer";
+import { sortBy } from "lodash";
 
+import { Context } from "@/server/context";
 import { createEmptyDocument, NotebookDocument } from "@/types";
 
 import {
@@ -10,46 +12,70 @@ import {
   superjsonUpdate,
 } from "./surreal";
 
+type DocumentInfo = Pick<
+  NotebookDocument,
+  "id" | "name" | "owner" | "timestamp"
+>;
+const DocummentInfoKeys = ["id", "name", "owner", "timestamp"];
+
 const NOTEBOOK_TYPE = "notebook";
-export async function getDocumentIds() {
+export async function getDocumentInfo(
+  ctx: Context
+): Promise<Array<DocumentInfo>> {
   const db = await getDb();
   // leaky superjson implementation details
-  const [{ result }] = await db.query(`select json.id from ${NOTEBOOK_TYPE}`);
+  const [{ result }] = await db.query(
+    `select ${DocummentInfoKeys.map((key) => `json.${key}`).join(
+      ", "
+    )} from ${NOTEBOOK_TYPE} where json.owner = $owner`,
+    {
+      owner: ctx.session.user.email,
+    }
+  );
   if (Array.isArray(result)) {
-    return result.map((row: any) => row.json.id).sort();
+    return sortBy(
+      result.map((row: any) => row.json as DocumentInfo),
+      "name"
+    );
   } else {
     return [];
   }
 }
 
 export async function getNotebookDocument(
-  id: string,
+  ctx: Context,
+  nameOrId: string,
   { throwIfNotFound = false } = {}
 ): Promise<NotebookDocument> {
-  const key = makeDbKey(NOTEBOOK_TYPE, id);
-  let doc = await superjsonSelect<NotebookDocument>(key);
+  let doc = await superjsonSelect<NotebookDocument>(
+    makeDbKey(NOTEBOOK_TYPE, nameOrId)
+  );
 
-  if (!doc) {
+  if (!doc || doc.owner !== ctx.session.user.email) {
     if (throwIfNotFound) {
       throw new Error("Document not found");
     }
-    doc = createEmptyDocument({ id });
-    await superjsonCreate(key, doc);
+    doc = createEmptyDocument({
+      name: nameOrId,
+      owner: ctx.session.user.email,
+    });
+    await superjsonCreate(makeDbKey(NOTEBOOK_TYPE, doc.id), doc);
   }
   return doc;
 }
 
-export async function deleteNotebookDocument(id: string) {
+export async function deleteNotebookDocument(ctx: Context, id: string) {
   const db = await getDb();
   await db.delete(makeDbKey(NOTEBOOK_TYPE, id));
 }
 
 export async function mutateNotebookDocument(
+  ctx: Context,
   id: string,
   timestamp: Date,
   mutate: (current: Draft<NotebookDocument>) => void
 ): Promise<NotebookDocument> {
-  const current = await getNotebookDocument(id, { throwIfNotFound: true });
+  const current = await getNotebookDocument(ctx, id, { throwIfNotFound: true });
   if (current.timestamp.getTime() !== timestamp.getTime()) {
     throw new Error(
       `Timestamp mismatch - ${current.timestamp.getTime()} !== ${timestamp.getTime()}`

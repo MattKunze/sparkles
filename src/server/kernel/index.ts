@@ -6,6 +6,7 @@ import path from "path";
 import superjson from "superjson";
 import { ulid } from "ulid";
 
+import { Context } from "@/server/context";
 import { ExecutionMetaInfo, ExecutionResult, NotebookCell } from "@/types";
 
 export const UPDATE_EVENT = "update";
@@ -28,12 +29,16 @@ export function initialize() {
     .on("change", emitUpdate);
 }
 
-export async function listContainers() {
+export async function listContainers(ctx: Context) {
   const list = await docker.listContainers();
-  return list.filter((t) => "repl-notebook.kernel" in t.Labels);
+  return list.filter(
+    (t) =>
+      "repl-notebook.owner" in t.Labels &&
+      t.Labels["repl-notebook.owner"] === ctx.session.user.email
+  );
 }
 
-export async function startContainer(documentId: string) {
+export async function startContainer(ctx: Context, documentId: string) {
   const workspacePath = resolveWorkspacePath(documentId);
   await fs.mkdir(workspacePath, { recursive: true });
 
@@ -45,6 +50,7 @@ export async function startContainer(documentId: string) {
     },
     Labels: {
       "repl-notebook.kernel": "nodejs",
+      "repl-notebook.owner": ctx.session.user.email,
       "repl-notebook.document": documentId,
     },
   });
@@ -52,27 +58,33 @@ export async function startContainer(documentId: string) {
   return container;
 }
 
-export async function deleteContainer(id: string) {
+export async function deleteContainer(ctx: Context, id: string) {
   const container = docker.getContainer(id);
+
+  // todo - authorize
+
   // note we don't wait here so the mutation returns immediately
   container.stop().then(() => {
     container.remove();
   });
 }
 
-export async function findContainer(documentId: string) {
-  const containers = await listContainers();
+export async function findContainer(ctx: Context, documentId: string) {
+  const containers = await listContainers(ctx);
   return containers.find(
-    (t) => t.Labels["repl-notebook.document"] === documentId
+    (t) =>
+      t.Labels["repl-notebook.owners"] === ctx.session.user.email &&
+      t.Labels["repl-notebook.document"] === documentId
   );
 }
 
 export async function enqueueExecution(
+  ctx: Context,
   documentId: string,
   cell: NotebookCell
 ): Promise<ExecutionMetaInfo> {
-  if (!(await findContainer(documentId))) {
-    await startContainer(documentId);
+  if (!(await findContainer(ctx, documentId))) {
+    await startContainer(ctx, documentId);
 
     // do better :/
     await new Promise((resolve) => setTimeout(resolve, 500));

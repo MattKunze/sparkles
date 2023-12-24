@@ -7,6 +7,8 @@
     "dev:app": "next dev",
     "dev:wss": "nodemon -w src/server src/server/wsServer.ts",
     "dev:kernel-nodejs": "nodemon kernels/nodejs/index.ts --",
+    "docker-compose:up": "docker-compose --env-file .env.local up -d",
+    "docker-compose:down": "docker-compose down",
     "build": "next build",
     "build:kernel-nodejs": "docker build kernels/nodejs/ -t repl-notebook:kernel-nodejs",
     "start": "run-p start:*",

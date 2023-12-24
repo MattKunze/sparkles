@@ -13,11 +13,13 @@ export function DocumentHeader(props: Props) {
   const { document } = props;
   const utils = trpc.useContext();
   const router = useRouter();
-  const [title, setTitle] = useState(document.id);
+  const [name, setName] = useState(document.name);
   const deleteDocument = trpc.notebook.delete.useMutation({
+    onMutate: () => {
+      router.push("/");
+    },
     onSuccess: () => {
       utils.notebook.list.invalidate();
-      router.push("/");
     },
   });
 
@@ -25,8 +27,8 @@ export function DocumentHeader(props: Props) {
     <div className="flex items-center justify-between my-1 mr-2">
       <input
         className="text-2xl font-bold grow bg-transparent"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
       />
       <div className="flex items-center">
         <button

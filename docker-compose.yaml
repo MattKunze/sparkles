@@ -1,0 +1,15 @@
+version: "2"
+
+volumes:
+  surrealdb:
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    user: root
+    command: start --auth --user $SURREALDB_USER --pass $SURREALDB_PASS file:/data/surreal.db
+    pull_policy: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - surrealdb:/data

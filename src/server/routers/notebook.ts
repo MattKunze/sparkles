@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import {
   deleteNotebookDocument,
-  getDocumentIds,
+  getDocumentInfo,
   getNotebookDocument,
   mutateNotebookDocument,
 } from "@/server/db";
@@ -15,21 +15,21 @@ const DocumentRef = z.object({
 });
 
 export const notebookRouter = router({
-  list: procedure.query(() => getDocumentIds()),
+  list: procedure.query((opts) => getDocumentInfo(opts.ctx)),
   get: procedure
     .input(
       z.object({
-        id: z.string(),
+        nameOrId: z.string(),
       })
     )
-    .query((opts) => getNotebookDocument(opts.input.id)),
+    .query((opts) => getNotebookDocument(opts.ctx, opts.input.nameOrId)),
   delete: procedure
     .input(
       z.object({
         id: z.string(),
       })
     )
-    .mutation((opts) => deleteNotebookDocument(opts.input.id)),
+    .mutation((opts) => deleteNotebookDocument(opts.ctx, opts.input.id)),
   addCell: procedure
     .input(
       DocumentRef.extend({
@@ -39,6 +39,7 @@ export const notebookRouter = router({
     )
     .mutation((opts) =>
       mutateNotebookDocument(
+        opts.ctx,
         opts.input.documentId,
         opts.input.documentTimestamp,
         (draft) => {
@@ -61,6 +62,7 @@ export const notebookRouter = router({
     )
     .mutation((opts) =>
       mutateNotebookDocument(
+        opts.ctx,
         opts.input.documentId,
         opts.input.documentTimestamp,
         (draft) => {
@@ -81,6 +83,7 @@ export const notebookRouter = router({
     )
     .mutation((opts) =>
       mutateNotebookDocument(
+        opts.ctx,
         opts.input.documentId,
         opts.input.documentTimestamp,
         (draft) => {
@@ -101,6 +104,7 @@ export const notebookRouter = router({
     )
     .mutation((opts) =>
       mutateNotebookDocument(
+        opts.ctx,
         opts.input.documentId,
         opts.input.documentTimestamp,
         (draft) => {
