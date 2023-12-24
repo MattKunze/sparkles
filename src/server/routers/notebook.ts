@@ -6,6 +6,7 @@ import {
   getNotebookDocument,
   mutateNotebookDocument,
 } from "@/server/db";
+import { deleteContainer, findContainer } from "@/server/kernel";
 import { procedure, router } from "@/server/trpc";
 import { createEmptyCell } from "@/types";
 
@@ -45,7 +46,16 @@ export const notebookRouter = router({
         id: z.string(),
       })
     )
-    .mutation((opts) => deleteNotebookDocument(opts.ctx, opts.input.id)),
+    .mutation(async (opts) => {
+      await deleteNotebookDocument(opts.ctx, opts.input.id);
+
+      // also destroy associated container
+      const container = await findContainer(opts.ctx, opts.input.id);
+      console.info({ documentId: opts.input.id, containerId: container?.Id });
+      if (container) {
+        await deleteContainer(opts.ctx, container.Id);
+      }
+    }),
   addCell: procedure
     .input(
       DocumentRef.extend({

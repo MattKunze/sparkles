@@ -15,6 +15,11 @@ export const eventEmitter = new EventEmitter();
 const docker = new Docker();
 const DockerImage = "repl-notebook:kernel-nodejs";
 
+enum ContainerLabels {
+  DOCUMENT = "repl-notebook.document",
+  IMAGE = "repl-notebook.kernel",
+  OWNER = "repl-notebook.owner",
+}
 let workspaceRoot: string;
 
 export function initialize() {
@@ -32,9 +37,7 @@ export function initialize() {
 export async function listContainers(ctx: Context) {
   const list = await docker.listContainers();
   return list.filter(
-    (t) =>
-      "repl-notebook.owner" in t.Labels &&
-      t.Labels["repl-notebook.owner"] === ctx.session.user.email
+    (t) => t.Labels[ContainerLabels.OWNER] === ctx.session.user.email
   );
 }
 
@@ -49,9 +52,9 @@ export async function startContainer(ctx: Context, documentId: string) {
       Binds: [`${workspacePath}:/workspace`],
     },
     Labels: {
-      "repl-notebook.kernel": "nodejs",
-      "repl-notebook.owner": ctx.session.user.email,
-      "repl-notebook.document": documentId,
+      [ContainerLabels.IMAGE]: DockerImage.split(":")[1],
+      [ContainerLabels.DOCUMENT]: documentId,
+      [ContainerLabels.OWNER]: ctx.session.user.email,
     },
   });
   await container.start();
@@ -73,8 +76,8 @@ export async function findContainer(ctx: Context, documentId: string) {
   const containers = await listContainers(ctx);
   return containers.find(
     (t) =>
-      t.Labels["repl-notebook.owners"] === ctx.session.user.email &&
-      t.Labels["repl-notebook.document"] === documentId
+      t.Labels[ContainerLabels.OWNER] === ctx.session.user.email &&
+      t.Labels[ContainerLabels.DOCUMENT] === documentId
   );
 }
 
