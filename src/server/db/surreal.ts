@@ -44,6 +44,33 @@ export async function superjsonSelect<T extends Record<string, unknown>>(
   }
 }
 
+export async function superjsonQuery<T extends Record<string, unknown>>(
+  table: string,
+  fields: string[],
+  // don't love how this leaks superjson serialization details
+  filter?: {
+    whereClause: string;
+    variables: Record<string, unknown>;
+  }
+): Promise<T[]> {
+  const surreal = await getDb();
+
+  const [{ result }] = await surreal.query(
+    `SELECT meta, ${fields
+      .map((field) => `json.${field}`)
+      .join(", ")} FROM ${table} ${
+      filter ? `WHERE ${filter.whereClause}` : ""
+    }`,
+    filter?.variables
+  );
+
+  if (Array.isArray(result)) {
+    return (result as SuperJSONResult[]).map(deserialize) as T[];
+  } else {
+    return [];
+  }
+}
+
 export async function superjsonCreate(
   key: string,
   doc: Record<string, unknown>

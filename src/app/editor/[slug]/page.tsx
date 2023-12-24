@@ -14,12 +14,12 @@ export default function Page({ params }: { params: { slug: string } }) {
 
   useEffect(() => {
     if (document.status === "success") {
-      const href = `/editor/${encodeURIComponent(document.data.id)}`;
+      const href = `/editor/${encodeURIComponent(document.data.name)}`;
       if (href !== pathname) {
         router.replace(href);
       }
     }
-  }, [document.status, document.data?.id, pathname, router]);
+  }, [document.status, document.data?.name, pathname, router]);
 
   return (
     <div className="container mx-auto">

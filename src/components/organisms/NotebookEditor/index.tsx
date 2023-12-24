@@ -21,7 +21,9 @@ export function NotebookEditor(props: Props) {
 
   useEffect(() => {
     const current = utils.notebook.list.getData();
-    if (!current || !current.includes(document.id)) {
+    // update list if document not found - this happens when creating a new
+    // document automatically off a manually edited route
+    if (!current || !current.find((t) => t.id === document.id)) {
       utils.notebook.list.invalidate();
     }
   }, [document.id, utils.notebook.list]);

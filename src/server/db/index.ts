@@ -8,7 +8,7 @@ import {
   getDb,
   makeDbKey,
   superjsonCreate,
-  superjsonSelect,
+  superjsonQuery,
   superjsonUpdate,
 } from "./surreal";
 
@@ -16,30 +16,21 @@ type DocumentInfo = Pick<
   NotebookDocument,
   "id" | "name" | "owner" | "timestamp"
 >;
-const DocummentInfoKeys = ["id", "name", "owner", "timestamp"];
+const DocumentInfoKeys = ["id", "name", "owner", "timestamp"];
 
 const NOTEBOOK_TYPE = "notebook";
 export async function getDocumentInfo(
   ctx: Context
 ): Promise<Array<DocumentInfo>> {
-  const db = await getDb();
-  // leaky superjson implementation details
-  const [{ result }] = await db.query(
-    `select ${DocummentInfoKeys.map((key) => `json.${key}`).join(
-      ", "
-    )} from ${NOTEBOOK_TYPE} where json.owner = $owner`,
+  const results = await superjsonQuery<DocumentInfo>(
+    NOTEBOOK_TYPE,
+    DocumentInfoKeys,
     {
-      owner: ctx.session.user.email,
+      whereClause: "json.owner = $owner",
+      variables: { owner: ctx.session.user.email },
     }
   );
-  if (Array.isArray(result)) {
-    return sortBy(
-      result.map((row: any) => row.json as DocumentInfo),
-      "name"
-    );
-  } else {
-    return [];
-  }
+  return sortBy(results, "name");
 }
 
 export async function getNotebookDocument(
@@ -47,11 +38,16 @@ export async function getNotebookDocument(
   nameOrId: string,
   { throwIfNotFound = false } = {}
 ): Promise<NotebookDocument> {
-  let doc = await superjsonSelect<NotebookDocument>(
-    makeDbKey(NOTEBOOK_TYPE, nameOrId)
-  );
+  let [doc] = await superjsonQuery<NotebookDocument>(NOTEBOOK_TYPE, ["*"], {
+    whereClause: "json.owner = $owner and (id = $id or json.name = $name)",
+    variables: {
+      owner: ctx.session.user.email,
+      id: makeDbKey(NOTEBOOK_TYPE, nameOrId),
+      name: nameOrId,
+    },
+  });
 
-  if (!doc || doc.owner !== ctx.session.user.email) {
+  if (!doc) {
     if (throwIfNotFound) {
       throw new Error("Document not found");
     }

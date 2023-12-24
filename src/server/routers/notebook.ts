@@ -23,6 +23,22 @@ export const notebookRouter = router({
       })
     )
     .query((opts) => getNotebookDocument(opts.ctx, opts.input.nameOrId)),
+  rename: procedure
+    .input(
+      DocumentRef.extend({
+        name: z.string(),
+      })
+    )
+    .mutation((opts) =>
+      mutateNotebookDocument(
+        opts.ctx,
+        opts.input.documentId,
+        opts.input.documentTimestamp,
+        (draft) => {
+          draft.name = opts.input.name;
+        }
+      )
+    ),
   delete: procedure
     .input(
       z.object({

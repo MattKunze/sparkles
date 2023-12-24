@@ -17,7 +17,7 @@ export default function DocumentList() {
         <ul className="menu w-72 rounded-box">
           {documents.data?.length ? (
             documents.data.map((info) => {
-              const href = `/editor/${encodeURIComponent(info.id)}`;
+              const href = `/editor/${encodeURIComponent(info.name)}`;
               return (
                 <li key={info.id}>
                   <Link
