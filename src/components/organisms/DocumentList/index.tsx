@@ -41,7 +41,11 @@ export default function DocumentList() {
               );
             })
           ) : filteredDocuments ? (
-            <li className="disabled">No documents</li>
+            <li className="disabled">
+              {documents.data?.length
+                ? "No matching documents"
+                : "No documents"}
+            </li>
           ) : (
             <LoadingSkeleton />
           )}

@@ -99,7 +99,7 @@ export async function enqueueExecution(
     resolveWorkspacePath(documentId),
     executionId
   );
-  await fs.mkdir(executionPath);
+  await fs.mkdir(executionPath, { recursive: true });
 
   const meta: ExecutionMetaInfo = {
     executionId,
