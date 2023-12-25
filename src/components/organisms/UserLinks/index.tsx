@@ -27,7 +27,7 @@ export default function UserLinks() {
           </Link>
         </div>
       </div>
-      <Link href="/instances" className="btn-btn-ghost">
+      <Link href="/instances" className="btn btn-ghost">
         <CommandLine />
       </Link>
     </div>

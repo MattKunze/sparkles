@@ -1,7 +1,7 @@
 "use client";
 import { useDebounce } from "@uidotdev/usehooks";
-import Editor from "@monaco-editor/react";
-import { useEffect, useState } from "react";
+import Editor, { MonacoDiffEditor } from "@monaco-editor/react";
+import { useEffect, useRef, useState } from "react";
 
 import { Play } from "@/components/icons/Play";
 import { XMark } from "@/components/icons/XMark";
@@ -10,6 +10,13 @@ import { NotebookCell } from "@/types";
 const DefaultEditorOptions = {
   lineNumbers: "off",
   minimap: { enabled: false },
+  hideCursorInOverviewRuler: true,
+  overviewRulerBorder: false,
+  overviewRulerLanes: 0,
+  scrollbar: {
+    vertical: "hidden",
+    handleMouseWheel: false,
+  },
 };
 
 const LanguageExtensions: Record<NotebookCell["language"], string> = {
@@ -25,6 +32,9 @@ type Props = {
 };
 export function CellEditor(props: Props) {
   const { cell } = props;
+  const editorRef = useRef<MonacoDiffEditor>(null);
+  const disposeRefs = useRef<Array<{ dispose: () => void }>>([]);
+  const [lineCount, setLineCount] = useState<number>(0);
   const [content, setContent] = useState<string | undefined>(cell.content);
   const debouncedContent = useDebounce(content, 500);
 
@@ -40,6 +50,18 @@ export function CellEditor(props: Props) {
     [debouncedContent]
   );
 
+  useEffect(() => {
+    const refs = disposeRefs.current;
+    return () => {
+      refs.forEach((d) => d.dispose());
+    };
+  }, []);
+
+  function updateLineCount() {
+    // todo - need to find a public/documented API for this
+    setLineCount(editorRef.current._getViewModel().getLineCount());
+  }
+
   return (
     <div className="flex flex-row group">
       <div className="flex flex-col mr-1">
@@ -54,7 +76,7 @@ export function CellEditor(props: Props) {
           <Play />
         </button>
       </div>
-      <div className="flex-grow border pt-5 bg-white relative">
+      <div className="flex-grow border pt-4 pr-2 bg-white relative">
         <div className="absolute -top-3 -right-3">
           <button
             className="btn btn-xs btn-secondary px-0 opacity-0 group-focus-within:opacity-100 transition-opacity"
@@ -65,11 +87,24 @@ export function CellEditor(props: Props) {
         </div>
         <Editor
           path={props.cell.id}
-          height="100px"
+          height={`${(lineCount + 1) * 18}px`}
           language={props.cell.language}
           value={props.cell.content}
           options={DefaultEditorOptions}
-          onChange={setContent}
+          onChange={(text) => {
+            setContent(text);
+            updateLineCount();
+            editorRef.current.revealLine(0);
+          }}
+          onMount={(editor) => {
+            editorRef.current = editor;
+            updateLineCount();
+
+            // listen for fold change events
+            disposeRefs.current.push(
+              editorRef.current.onDidChangeHiddenAreas(updateLineCount)
+            );
+          }}
         />
       </div>
     </div>
