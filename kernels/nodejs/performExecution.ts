@@ -8,6 +8,7 @@ import { captureConsole } from "./captureConsole";
 import { capturePromise } from "./capturePromise";
 import { createExecutionContext } from "./createExecutionContext";
 import { defaultExportPlugin } from "./defaultExportPlugin";
+import { formatError } from "./formatError";
 import { outputResult } from "./outputResult";
 
 export async function performExecution(filename: string) {
@@ -45,21 +46,12 @@ export async function performExecution(filename: string) {
         capturePromise(executionPath, key, start, value);
       }
     }
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
     await outputResult(executionPath, {
       error: {
         duration: Date.now() - start,
-        data: formatError(error),
-        ...(error instanceof Error ? { stack: error.stack } : undefined),
+        ...formatError(error),
       },
     });
   }
 }
-
-const formatError = (error: unknown) => {
-  if (error instanceof Error) {
-    return error;
-  }
-  return String(error);
-};

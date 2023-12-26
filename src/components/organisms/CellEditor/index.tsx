@@ -76,7 +76,7 @@ export function CellEditor(props: Props) {
           <Play />
         </button>
       </div>
-      <div className="flex-grow border pt-4 pr-2 bg-white relative">
+      <div className="flex-grow border rounded pt-4 pr-2 bg-white relative">
         <div className="absolute -top-3 -right-3">
           <button
             className="btn btn-xs btn-secondary px-0 opacity-0 group-focus-within:opacity-100 transition-opacity"

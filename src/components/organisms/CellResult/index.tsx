@@ -33,18 +33,21 @@ export function CellResult(props: Props) {
           <ChartBarSquare />
         </button>
       </div>
-      <div role="tablist" className="tabs tabs-lifted w-full">
+      <div role="tablist" className="tabs tabs-lifted w-full relative">
+        <div className="badge badge-ghost absolute top-1 right-0 ">
+          ...{result.executionId.slice(-7)}
+        </div>
         <input
           type="radio"
           name={result.executionId}
           role="tab"
-          className="tab"
+          className="tab ml-5 whitespace-nowrap"
           aria-label={resultsLabel}
           defaultChecked
         />
         <div
           role="tabpanel"
-          className="tab-content bg-base-100 border-base-300 rounded-box p-2"
+          className="tab-content bg-base-100 border-base-300 rounded p-2"
         >
           {resultsContent}
         </div>
@@ -61,7 +64,7 @@ export function CellResult(props: Props) {
         <div
           role="tabpanel"
           className={clsx(
-            "tab-content bg-base-100 border-base-300 rounded-box p-2",
+            "tab-content bg-base-100 border-base-300 rounded p-2",
             {
               invisible: !("logs" in result && result.logs?.length),
             }

@@ -21,7 +21,7 @@ export type ExecutionErrorResult = {
   executionId: string;
   error: {
     duration: number;
-    data: Error;
+    data: Error | string;
     stack?: string;
   };
 };

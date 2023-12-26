@@ -15,6 +15,17 @@ export const defaultExportPlugin: prettier.Plugin = {
           finalStatement.exportKind = "value";
           finalStatement.declaration = finalStatement.expression;
           delete finalStatement.expression;
+        } else if (
+          finalStatement.type === "VariableDeclaration" &&
+          finalStatement.declarations.length === 1
+        ) {
+          // todo - hoist multiple final declarations to exports
+          ast.body.pop();
+          ast.body.push({
+            type: "ExportNamedDeclaration",
+            declaration: finalStatement,
+            exportKind: "value",
+          });
         }
 
         return ast;
