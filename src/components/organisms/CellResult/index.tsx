@@ -1,6 +1,8 @@
 import clsx from "clsx";
+import { useCopyToClipboard } from "@uidotdev/usehooks";
 
 import { ChartBarSquare } from "@/components/icons/ChartBarSquare";
+import { SquareStack } from "@/components/icons/SquareStack";
 import { ErrorDetails } from "@/components/molecules/ErrorDetails";
 import { ExportsTable } from "@/components/molecules/ExportsTable";
 import { LogsTable } from "@/components/molecules/LogsTable";
@@ -13,6 +15,8 @@ type Props = {
 };
 export function CellResult(props: Props) {
   const { result } = props;
+
+  const [, copyToClipboard] = useCopyToClipboard();
 
   let resultsLabel = "Running";
   let resultsContent;
@@ -36,6 +40,12 @@ export function CellResult(props: Props) {
       <div role="tablist" className="tabs tabs-lifted w-full relative">
         <div className="badge badge-ghost absolute top-1 right-0 ">
           ...{result.executionId.slice(-7)}
+          <a
+            className="cursor-pointer"
+            onClick={() => copyToClipboard(result.executionId)}
+          >
+            <SquareStack className="pl-1" />
+          </a>
         </div>
         <input
           type="radio"
@@ -71,7 +81,10 @@ export function CellResult(props: Props) {
           )}
         >
           {"logs" in result && result.logs && (
-            <LogsTable executionStart={result.timestamp} logs={result.logs} />
+            <LogsTable
+              executionStart={result.createTimestamp}
+              logs={result.logs}
+            />
           )}
         </div>
       </div>

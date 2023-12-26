@@ -38,6 +38,15 @@ export function NotebookEditor(props: Props) {
     onSuccess: setDocument,
   });
   const evaluateCell = trpc.kernel.evaluateCell.useMutation({
+    onMutate: (variables) => {
+      // todo - this should live on the server
+      const { cellId } = variables;
+      const pos = document.cells.findIndex((t) => t.id === cellId);
+      variables.linkedExecutionIds = document.cells
+        .slice(0, pos)
+        .map((t) => executionResults[t.id]?.executionId)
+        .filter(Boolean);
+    },
     onSuccess: (data) => {
       setExecutionResults((prev) => ({
         ...prev,

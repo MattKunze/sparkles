@@ -27,7 +27,7 @@ function enqueue(path: string) {
 }
 
 chokidar
-  .watch(`${argv["watch-path"]}/**/*.ts`, {
+  .watch(`${argv["watch-path"]}/**/raw.ts`, {
     ignoreInitial: true,
   })
   .on("add", enqueue)

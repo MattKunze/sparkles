@@ -1,9 +1,13 @@
 import * as esbuild from "esbuild";
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
+import vm from "node:vm";
 import path from "path";
 import prettier from "prettier";
-import vm from "node:vm";
+import superjson from "superjson";
 
+import { ExecutionMetaInfo } from "@/types";
+
+import { buildExecutionScript } from "./buildExecutionScript";
 import { captureConsole } from "./captureConsole";
 import { capturePromise } from "./capturePromise";
 import { createExecutionContext } from "./createExecutionContext";
@@ -18,6 +22,13 @@ export async function performExecution(filename: string) {
   console.info(`Executing job: ${filename}`);
 
   try {
+    const metaPath = path.resolve(executionPath, "meta.json");
+    const meta = superjson.parse(
+      await readFile(metaPath, "utf-8")
+    ) as ExecutionMetaInfo;
+    meta.executeTimestamp = new Date();
+    await writeFile(metaPath, superjson.stringify(meta));
+
     const content = await readFile(filename, "utf-8");
     const formatted = await prettier.format(content, {
       parser: "typescript",
@@ -29,10 +40,16 @@ export async function performExecution(filename: string) {
       sourcemap: true,
     });
 
+    await writeFile(path.resolve(executionPath, "index.js"), transformed.code);
+    await writeFile(
+      path.resolve(executionPath, "index.js.map"),
+      transformed.map
+    );
+
     const context = createExecutionContext({
       console: captureConsole(executionPath),
     });
-    vm.runInNewContext(transformed.code, context);
+    vm.runInContext(await buildExecutionScript(executionPath, meta), context);
 
     await outputResult(executionPath, {
       success: {
@@ -40,6 +57,9 @@ export async function performExecution(filename: string) {
         data: context.module.exports,
       },
     });
+
+    meta.exportKeys = Object.keys(context.module.exports);
+    await writeFile(metaPath, superjson.stringify(meta));
 
     for (const [key, value] of Object.entries(context.module.exports)) {
       if (value instanceof Promise) {

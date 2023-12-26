@@ -84,7 +84,8 @@ export async function findContainer(ctx: Context, documentId: string) {
 export async function enqueueExecution(
   ctx: Context,
   documentId: string,
-  cell: NotebookCell
+  cell: NotebookCell,
+  linkedExecutionIds?: string[]
 ): Promise<ExecutionMetaInfo> {
   if (!(await findContainer(ctx, documentId))) {
     await startContainer(ctx, documentId);
@@ -103,15 +104,17 @@ export async function enqueueExecution(
 
   const meta: ExecutionMetaInfo = {
     executionId,
+    documentId,
     cellId: cell.id,
-    timestamp: new Date(),
+    createTimestamp: new Date(),
+    linkedExecutionIds,
   };
 
   await fs.writeFile(
     path.resolve(executionPath, "meta.json"),
     superjson.stringify(meta)
   );
-  await fs.writeFile(path.resolve(executionPath, "index.ts"), cell.content);
+  await fs.writeFile(path.resolve(executionPath, "raw.ts"), cell.content);
 
   return meta;
 }

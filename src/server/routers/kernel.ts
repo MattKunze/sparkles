@@ -23,6 +23,7 @@ export const kernelRouter = router({
       z.object({
         documentId: z.string(),
         cellId: z.string(),
+        linkedExecutionIds: z.array(z.string()).optional(),
       })
     )
     .mutation(async (opts) => {
@@ -35,7 +36,12 @@ export const kernelRouter = router({
         throw new Error("Cell not found");
       }
 
-      return enqueueExecution(opts.ctx, documentId, current.cells[pos]);
+      return enqueueExecution(
+        opts.ctx,
+        documentId,
+        current.cells[pos],
+        opts.input.linkedExecutionIds
+      );
     }),
   executionUpdates: procedure
     .input(

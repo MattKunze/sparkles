@@ -1,7 +1,11 @@
 export type ExecutionMetaInfo = {
   executionId: string;
+  linkedExecutionIds?: string[];
+  documentId: string;
   cellId: string;
-  timestamp: Date;
+  createTimestamp: Date;
+  executeTimestamp?: Date;
+  exportKeys?: string[];
 };
 
 export type ExecutionLogResult = {

@@ -1,4 +1,6 @@
-import { createRequire } from "module";
+import vm from "node:vm";
+
+import createRequire from "./contextRequire";
 
 const sharedTypes = {
   Date,
@@ -10,14 +12,20 @@ const sharedTypes = {
   URL,
 };
 
-const require = createRequire(import.meta.url);
+const requireCache = {};
 
 export function createExecutionContext(overrides: Record<string, unknown>) {
-  return {
+  const context = vm.createContext({
     ...global,
     ...sharedTypes,
     ...overrides,
-    require,
     module: { exports: {} },
-  };
+  });
+  context.require = createRequire({
+    dir: __dirname,
+    context,
+    cache: requireCache,
+  });
+
+  return context;
 }
