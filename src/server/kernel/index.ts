@@ -7,7 +7,9 @@ import superjson from "superjson";
 import { ulid } from "ulid";
 
 import { Context } from "@/server/context";
-import { ExecutionMetaInfo, ExecutionResult, NotebookCell } from "@/types";
+import { ExecutionMetaInfo, ExecutionResult, NotebookDocument } from "@/types";
+
+import { updatePackageJson } from "./nodejs";
 
 export const UPDATE_EVENT = "update";
 export const eventEmitter = new EventEmitter();
@@ -20,15 +22,15 @@ enum ContainerLabels {
   IMAGE = "repl-notebook.kernel",
   OWNER = "repl-notebook.owner",
 }
-let workspaceRoot: string;
 
+let workspaceRoot: string;
 export function initialize() {
   workspaceRoot = String(process.env.EXECUTION_WORKSPACE);
 
   chokidar
     .watch(`${workspaceRoot}/**/*.(json|log)`, {
       ignoreInitial: true,
-      ignored: /meta\.json$/,
+      ignored: [/node_modules/, /meta\.json$/],
     })
     .on("add", emitUpdate)
     .on("change", emitUpdate);
@@ -83,29 +85,34 @@ export async function findContainer(ctx: Context, documentId: string) {
 
 export async function enqueueExecution(
   ctx: Context,
-  documentId: string,
-  cell: NotebookCell,
+  document: NotebookDocument,
+  cellId: string,
   linkedExecutionIds?: string[]
 ): Promise<ExecutionMetaInfo> {
-  if (!(await findContainer(ctx, documentId))) {
-    await startContainer(ctx, documentId);
+  if (!(await findContainer(ctx, document.id))) {
+    await startContainer(ctx, document.id);
 
     // do better :/
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
+  const cell = document.cells.find((t) => t.id === cellId);
+  if (!cell) {
+    throw new Error("Cell not found");
+  }
+
   const executionId = ulid();
 
-  const executionPath = path.resolve(
-    resolveWorkspacePath(documentId),
-    executionId
-  );
+  const documentPath = resolveWorkspacePath(document.id);
+  const executionPath = path.resolve(documentPath, executionId);
   await fs.mkdir(executionPath, { recursive: true });
+
+  updatePackageJson(documentPath, document);
 
   const meta: ExecutionMetaInfo = {
     executionId,
-    documentId,
-    cellId: cell.id,
+    documentId: document.id,
+    cellId,
     createTimestamp: new Date(),
     linkedExecutionIds,
   };

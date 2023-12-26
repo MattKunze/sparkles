@@ -28,18 +28,14 @@ export const kernelRouter = router({
     )
     .mutation(async (opts) => {
       const { documentId, cellId } = opts.input;
-      const current = await getNotebookDocument(opts.ctx, documentId, {
+      const document = await getNotebookDocument(opts.ctx, documentId, {
         throwIfNotFound: true,
       });
-      const pos = current.cells.findIndex((c) => c.id === cellId);
-      if (pos < 0) {
-        throw new Error("Cell not found");
-      }
 
       return enqueueExecution(
         opts.ctx,
-        documentId,
-        current.cells[pos],
+        document,
+        cellId,
         opts.input.linkedExecutionIds
       );
     }),

@@ -2,6 +2,7 @@ import chokidar from "chokidar";
 import Queue from "queue";
 import yargs from "yargs";
 
+import { installDependencies } from "./installDependencies";
 import { performExecution } from "./performExecution";
 
 const argv = yargs(process.argv.slice(2))
@@ -23,13 +24,22 @@ const q = new Queue({
 
 function enqueue(path: string) {
   console.info(`Enqueuing job: ${path}`);
-  q.push(performExecution.bind(null, path));
+  if (path.endsWith("package.json")) {
+    q.push(installDependencies.bind(null, path));
+  } else {
+    q.push(performExecution.bind(null, path));
+  }
 }
 
 chokidar
   .watch(`${argv["watch-path"]}/**/raw.ts`, {
     ignoreInitial: true,
   })
+  .on("add", enqueue)
+  .on("change", enqueue);
+
+chokidar
+  .watch(`${argv["watch-path"]}/package.json`)
   .on("add", enqueue)
   .on("change", enqueue);
 
