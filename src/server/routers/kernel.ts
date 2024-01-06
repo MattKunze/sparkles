@@ -77,17 +77,17 @@ export const kernelRouter = router({
         // can't use async auth check here so this seems the best alternative
         let authorized = false;
         checkAuthorization(opts.ctx, opts.input.documentId)
-          .then((doc) => {
+          .then(() => {
             authorized = true;
+
+            // broadcast most recent executions for document
+            emitCurrentResults(opts.ctx, opts.input.documentId);
           })
           .catch(() => {
             console.error(
               `Unauthorized subscription: ${opts.input.documentId}`
             );
           });
-
-        // broadcast most recent executions for document
-        emitCurrentResults(opts.ctx, opts.input.documentId);
 
         const onUpdate = (updateDocumentId: string, data: ExecutionResult) => {
           if (authorized && updateDocumentId === opts.input.documentId) {
