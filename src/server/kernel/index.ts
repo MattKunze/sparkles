@@ -30,7 +30,7 @@ export function initialize() {
   chokidar
     .watch(`${workspaceRoot}/**/*.(json|log)`, {
       ignoreInitial: true,
-      ignored: [/node_modules/, /meta\.json$/],
+      ignored: [/node_modules/],
     })
     .on("add", emitUpdate)
     .on("change", emitUpdate);
@@ -83,6 +83,68 @@ export async function findContainer(ctx: Context, documentId: string) {
   );
 }
 
+export async function resolveLatestExecutionInfo(
+  ctx: Context,
+  documentId: string
+) {
+  // todo - checkAuthorization is throwing here on page load
+
+  // first find most recent execution for each cell
+  const documentPath = resolveWorkspacePath(documentId);
+  try {
+    await fs.stat(documentPath);
+  } catch {
+    return {};
+  }
+  const files = await fs.readdir(documentPath, { withFileTypes: true });
+  const executionIds = files
+    .filter((file) => file.isDirectory() && file.name !== "node_modules")
+    .map((file) => file.name)
+    .sort();
+  const map: Record<string, ExecutionMetaInfo> = {};
+  for (const executionId of executionIds) {
+    const meta = superjson.parse(
+      await fs.readFile(
+        path.resolve(documentPath, executionId, "meta.json"),
+        "utf-8"
+      )
+    ) as ExecutionMetaInfo;
+
+    if (
+      !map[meta.cellId] ||
+      meta.createTimestamp > map[meta.cellId].createTimestamp
+    ) {
+      map[meta.cellId] = meta;
+    }
+  }
+
+  return map;
+}
+
+export async function emitCurrentResults(ctx: Context, documentId: string) {
+  const documentPath = resolveWorkspacePath(documentId);
+  const executionInfo = await resolveLatestExecutionInfo(ctx, documentId);
+
+  // then iterate executions and emit the cached updates -
+  // might be nice to merge these and emit as a smaller number of updates
+  Object.values(executionInfo).map(async (meta) => {
+    const files = await fs.readdir(
+      path.resolve(documentPath, meta.executionId),
+      {
+        withFileTypes: true,
+      }
+    );
+    files.forEach((file) => {
+      if (
+        file.name !== "meta.json" &&
+        (file.name.endsWith(".log") || file.name.endsWith(".json"))
+      ) {
+        emitUpdate(path.resolve(file.path, file.name), meta);
+      }
+    });
+  });
+}
+
 export async function enqueueExecution(
   ctx: Context,
   document: NotebookDocument,
@@ -130,7 +192,7 @@ function resolveWorkspacePath(documentId: string) {
   return path.resolve(workspaceRoot, documentId);
 }
 
-async function emitUpdate(filename: string) {
+async function emitUpdate(filename: string, meta?: ExecutionMetaInfo) {
   const [documentId, executionId] = path
     .dirname(filename)
     .split(path.sep)
@@ -164,7 +226,7 @@ async function emitUpdate(filename: string) {
       throw new Error(`Unexpected file extension: ${path.extname(filename)}`);
   }
 
-  eventEmitter.emit(UPDATE_EVENT, documentId, result);
+  eventEmitter.emit(UPDATE_EVENT, documentId, { ...meta, ...result });
 }
 
 const parseLogResult = (raw: string) =>

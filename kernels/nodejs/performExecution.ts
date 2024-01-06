@@ -48,6 +48,8 @@ export async function performExecution(filename: string) {
 
     const context = createExecutionContext({
       console: captureConsole(executionPath),
+      // todo - want to control the environment
+      process,
     });
     vm.runInContext(await buildExecutionScript(executionPath, meta), context);
 

@@ -1,40 +1,53 @@
 import clsx from "clsx";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 
-import { ChartBarSquare } from "@/components/icons/ChartBarSquare";
+import { CheckCircle } from "@/components/icons/CheckCircle";
+import { ExclamationCircle } from "@/components/icons/ExclamationCircle";
 import { SquareStack } from "@/components/icons/SquareStack";
 import { ErrorDetails } from "@/components/molecules/ErrorDetails";
 import { ExportsTable } from "@/components/molecules/ExportsTable";
 import { LogsTable } from "@/components/molecules/LogsTable";
 import { ExecutionMetaInfo, ExecutionResult } from "@/types";
+import { formatDuration } from "@/utils/format";
 
 export type CellExecutionResults = ExecutionMetaInfo & (ExecutionResult | {});
 
 type Props = {
   result: CellExecutionResults;
+  isStale: boolean;
 };
 export function CellResult(props: Props) {
   const { result } = props;
 
   const [, copyToClipboard] = useCopyToClipboard();
 
-  let resultsLabel = "Running";
-  let resultsContent;
-  if ("success" in result) {
-    resultsLabel = `Success: ${result.success.duration}ms`;
-    resultsContent = <ExportsTable data={result.success.data} />;
-  } else if ("error" in result) {
-    resultsLabel = `Error: ${result.error.duration}ms`;
-    resultsContent = (
-      <ErrorDetails error={result.error.data} stack={result.error.stack} />
-    );
-  }
+  const queueDuration = result.executeTimestamp
+    ? result.executeTimestamp.getTime() - result.createTimestamp.getTime()
+    : undefined;
+
+  const executeDuration =
+    "success" in result
+      ? result.success.duration
+      : "error" in result
+        ? result.error.duration
+        : undefined;
 
   return (
     <div className="flex flex-row group">
       <div className="flex flex-col mr-1">
-        <button className="btn btn-sm btn-accent btn-ghost mt-2 px-1">
-          <ChartBarSquare />
+        <button
+          disabled
+          className={clsx("btn btn-sm btn-ghost px-1", {
+            "!bg-transparent": !props.isStale,
+          })}
+        >
+          {"success" in result ? (
+            <CheckCircle className="text-green-600" />
+          ) : "error" in result ? (
+            <ExclamationCircle className="text-red-600" />
+          ) : (
+            <span className="loading loading-spinner text-gray-500"></span>
+          )}
         </button>
       </div>
       <div role="tablist" className="tabs tabs-lifted w-full relative">
@@ -52,14 +65,21 @@ export function CellResult(props: Props) {
           name={result.executionId}
           role="tab"
           className="tab ml-5 whitespace-nowrap"
-          aria-label={resultsLabel}
+          aria-label={resultsLabel({ queueDuration, executeDuration })}
           defaultChecked
         />
         <div
           role="tabpanel"
           className="tab-content bg-base-100 border-base-300 rounded p-2"
         >
-          {resultsContent}
+          {"success" in result ? (
+            <ExportsTable data={result.success.data} />
+          ) : "error" in result ? (
+            <ErrorDetails
+              error={result.error.data}
+              stack={result.error.stack}
+            />
+          ) : null}
         </div>
 
         <input
@@ -82,7 +102,7 @@ export function CellResult(props: Props) {
         >
           {"logs" in result && result.logs && (
             <LogsTable
-              executionStart={result.createTimestamp}
+              executionStart={result.executeTimestamp ?? result.createTimestamp}
               logs={result.logs}
             />
           )}
@@ -90,6 +110,26 @@ export function CellResult(props: Props) {
       </div>
     </div>
   );
+}
+
+function resultsLabel({
+  queueDuration,
+  executeDuration,
+}: {
+  queueDuration?: number;
+  executeDuration?: number;
+}) {
+  const precision = "human";
+  if (executeDuration !== undefined) {
+    const f = `${formatDuration(executeDuration, precision)}`;
+    if (queueDuration && queueDuration >= 1000) {
+      return `${f} (Queued ${formatDuration(queueDuration, precision)})`;
+    }
+    return f;
+  } else if (queueDuration !== undefined) {
+    return `Queued ${formatDuration(queueDuration, precision)}`;
+  }
+  return "Queued";
 }
 
 export function mergeResults(

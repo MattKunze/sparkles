@@ -3,6 +3,7 @@ import vm from "node:vm";
 import createRequire from "./contextRequire";
 
 const sharedTypes = {
+  Buffer,
   Date,
   Error,
   RegExp,

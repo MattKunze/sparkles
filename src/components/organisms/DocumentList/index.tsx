@@ -27,19 +27,23 @@ export default function DocumentList() {
       <div className="shrink overflow-y-auto">
         <ul className="menu w-72 rounded-box">
           {filteredDocuments?.length ? (
-            filteredDocuments.map((info) => {
-              const href = `/editor/${encodeURIComponent(info.name)}`;
-              return (
-                <li key={info.id}>
-                  <Link
-                    href={href}
-                    className={clsx({ active: href === pathname })}
-                  >
-                    {info.name}
-                  </Link>
-                </li>
-              );
-            })
+            filteredDocuments.map((info) => (
+              <li key={info.id}>
+                <Link
+                  href={`/editor/${encodeURIComponent(info.id)}`}
+                  className={clsx({
+                    active:
+                      pathname &&
+                      [
+                        `/editor/${encodeURIComponent(info.id)}`,
+                        `/editor/${encodeURIComponent(info.name)}`,
+                      ].includes(pathname),
+                  })}
+                >
+                  {info.name}
+                </Link>
+              </li>
+            ))
           ) : filteredDocuments ? (
             <li className="disabled">
               {documents.data?.length

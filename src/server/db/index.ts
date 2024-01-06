@@ -68,7 +68,7 @@ export async function deleteNotebookDocument(ctx: Context, id: string) {
 }
 
 export async function checkAuthorization(ctx: Context, documentId: string) {
-  let [doc] = await superjsonQuery(NOTEBOOK_TYPE, ["id"], {
+  let [doc] = await superjsonQuery<NotebookDocument>(NOTEBOOK_TYPE, ["id"], {
     whereClause: "json.owner = $owner and id = $id",
     variables: {
       owner: ctx.session.user.email,
@@ -79,6 +79,8 @@ export async function checkAuthorization(ctx: Context, documentId: string) {
   if (!doc) {
     throw new Error("Unauthorized");
   }
+
+  return doc;
 }
 
 export async function mutateNotebookDocument(

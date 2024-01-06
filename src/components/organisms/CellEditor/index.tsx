@@ -69,7 +69,7 @@ export function CellEditor(props: Props) {
           {LanguageExtensions[cell.language]}
         </span>
         <button
-          className="btn btn-sm btn-accent btn-ghost mt-2 px-1"
+          className="btn btn-sm btn-ghost mt-2 px-1"
           disabled={cell.language === "markdown"}
           onClick={props.onEvaluate}
         >

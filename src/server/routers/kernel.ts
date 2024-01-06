@@ -4,12 +4,14 @@ import { z } from "zod";
 import { checkAuthorization, getNotebookDocument } from "@/server/db";
 import {
   deleteContainer,
+  emitCurrentResults,
   enqueueExecution,
   eventEmitter,
   listContainers,
+  resolveLatestExecutionInfo,
   UPDATE_EVENT,
 } from "@/server/kernel";
-import { ExecutionResult } from "@/types";
+import { ExecutionMetaInfo, ExecutionResult, NotebookDocument } from "@/types";
 
 import { procedure, router } from "../trpc";
 
@@ -23,7 +25,6 @@ export const kernelRouter = router({
       z.object({
         documentId: z.string(),
         cellId: z.string(),
-        linkedExecutionIds: z.array(z.string()).optional(),
       })
     )
     .mutation(async (opts) => {
@@ -32,12 +33,38 @@ export const kernelRouter = router({
         throwIfNotFound: true,
       });
 
-      return enqueueExecution(
+      const executionInfo = await resolveLatestExecutionInfo(
         opts.ctx,
-        document,
-        cellId,
-        opts.input.linkedExecutionIds
+        documentId
       );
+      // todo - actually determine if cell is referenced
+      const pos = document.cells.findIndex((t) => t.id === cellId);
+      if (pos < 0) {
+        throw new Error("Cell not found");
+      }
+      const linkedCells = document.cells.slice(0, pos);
+      const linkedExecutionIds = await linkedCells.reduce(
+        async (prev, cell) => {
+          const acc = await prev;
+          const meta = executionInfo[cell.id];
+          // enqueue execution if linked cell needs to be re-executed
+          if (!meta || cell.timestamp > meta.createTimestamp) {
+            const { executionId } = await enqueueExecution(
+              opts.ctx,
+              document,
+              cell.id,
+              acc
+            );
+            acc.push(executionId);
+          } else {
+            acc.push(meta.executionId);
+          }
+          return acc;
+        },
+        Promise.resolve([] as string[])
+      );
+
+      return enqueueExecution(opts.ctx, document, cellId, linkedExecutionIds);
     }),
   executionUpdates: procedure
     .input(
@@ -46,18 +73,21 @@ export const kernelRouter = router({
       })
     )
     .subscription((opts) =>
-      observable<ExecutionResult>((emit) => {
+      observable<ExecutionResult & Partial<ExecutionMetaInfo>>((emit) => {
         // can't use async auth check here so this seems the best alternative
         let authorized = false;
         checkAuthorization(opts.ctx, opts.input.documentId)
-          .then(() => {
+          .then((doc) => {
             authorized = true;
           })
           .catch(() => {
             console.error(
-              "Unauthorized subscription: ${opts.input.documentId}"
+              `Unauthorized subscription: ${opts.input.documentId}`
             );
           });
+
+        // broadcast most recent executions for document
+        emitCurrentResults(opts.ctx, opts.input.documentId);
 
         const onUpdate = (updateDocumentId: string, data: ExecutionResult) => {
           if (authorized && updateDocumentId === opts.input.documentId) {

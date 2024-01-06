@@ -38,14 +38,19 @@ export function NotebookEditor(props: Props) {
     onSuccess: setDocument,
   });
   const evaluateCell = trpc.kernel.evaluateCell.useMutation({
-    onMutate: (variables) => {
-      // todo - this should live on the server
-      const { cellId } = variables;
-      const pos = document.cells.findIndex((t) => t.id === cellId);
-      variables.linkedExecutionIds = document.cells
-        .slice(0, pos)
-        .map((t) => executionResults[t.id]?.executionId)
-        .filter(Boolean);
+    onMutate: (data) => {
+      // seems like this should live server-side - this updates the cell
+      // timestamp so dependent cells are marked as stale
+      const cell = document.cells.find((t) => t.id === data.cellId);
+      if (!cell) {
+        return;
+      }
+      updateCell.mutate({
+        documentId: document.id,
+        documentTimestamp: document.timestamp,
+        cellId: cell.id,
+        content: cell.content,
+      });
     },
     onSuccess: (data) => {
       setExecutionResults((prev) => ({
@@ -63,6 +68,12 @@ export function NotebookEditor(props: Props) {
             (t) => t.executionId === data.executionId
           );
           if (!prevData) {
+            if (data.documentId === document.id && data.cellId) {
+              return {
+                ...prev,
+                [data.cellId]: data as CellExecutionResults,
+              };
+            }
             console.error("Unknown execution", data);
             return prev;
           }
@@ -78,39 +89,49 @@ export function NotebookEditor(props: Props) {
   return (
     <>
       <DocumentHeader document={document} />
-      {document.cells.map((cell) => (
-        <div key={cell.id} className="flex flex-col my-5 pr-3 gap-2">
-          <CellEditor
-            cell={cell}
-            onDelete={() =>
-              deleteCell.mutate({
-                documentId: document.id,
-                documentTimestamp: document.timestamp,
-                cellId: cell.id,
-              })
-            }
-            onEvaluate={() =>
-              evaluateCell.mutate({
-                documentId: document.id,
-                cellId: cell.id,
-              })
-            }
-            onUpdate={(content) =>
-              updateCell.mutate({
-                documentId: document.id,
-                documentTimestamp: document.timestamp,
-                cellId: cell.id,
-                content,
-              })
-            }
-          />
-          {cell.id in executionResults && (
-            <>
-              <CellResult result={executionResults[cell.id]} />
-            </>
-          )}
-        </div>
-      ))}
+      {document.cells.map((cell) => {
+        // todo - actually determine if prev cell is referenced
+        const pos = document.cells.findIndex((t) => t.id === cell.id);
+        const linkedCells = document.cells.slice(0, pos);
+
+        const result = executionResults[cell.id];
+        return (
+          <div key={cell.id} className="flex flex-col my-5 pr-3 gap-2">
+            <CellEditor
+              cell={cell}
+              onDelete={() =>
+                deleteCell.mutate({
+                  documentId: document.id,
+                  documentTimestamp: document.timestamp,
+                  cellId: cell.id,
+                })
+              }
+              onEvaluate={() =>
+                evaluateCell.mutate({
+                  documentId: document.id,
+                  cellId: cell.id,
+                })
+              }
+              onUpdate={(content) =>
+                updateCell.mutate({
+                  documentId: document.id,
+                  documentTimestamp: document.timestamp,
+                  cellId: cell.id,
+                  content,
+                })
+              }
+            />
+            {result && (
+              <CellResult
+                result={executionResults[cell.id]}
+                isStale={linkedCells
+                  .concat(cell)
+                  .some((cell) => cell.timestamp > result.createTimestamp)}
+              />
+            )}
+          </div>
+        );
+      })}
       <div className="flex flex-row justify-center">
         <button
           className="btn btn-primary btn-outline btn-sm px-10"
