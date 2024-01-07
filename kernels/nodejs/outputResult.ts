@@ -1,6 +1,7 @@
 import { writeFile } from "fs/promises";
 import path from "path";
-import superjson from "superjson";
+
+import superjson from "./superjson";
 
 import {
   ExecutionDeferredResult,

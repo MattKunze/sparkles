@@ -5,19 +5,27 @@ let db: Surreal | undefined;
 
 export async function getDb() {
   if (!db) {
+    const {
+      SURREALDB_ENDPOINT,
+      SURREALDB_USERNAME,
+      SURREALDB_PASSWORD,
+      SURREALDB_DATABASE,
+      SURREALDB_NAMESPACE,
+    } = process.env;
+
     db = new Surreal();
-    await db.connect(String(process.env.SURREALDB_ENDPOINT));
-    console.info(`connected to ${process.env.SURREALDB_ENDPOINT}`);
+    await db.connect(String(SURREALDB_ENDPOINT));
     await db.signin({
-      user: String(process.env.SURREALDB_USER),
-      pass: String(process.env.SURREALDB_PASS),
+      username: String(SURREALDB_USERNAME),
+      password: String(SURREALDB_PASSWORD),
     });
+    console.info(`connected to ${SURREALDB_USERNAME}@${SURREALDB_ENDPOINT}`);
     await db.use({
-      db: String(process.env.SURREALDB_DB),
-      ns: String(process.env.SURREALDB_NS),
+      database: String(SURREALDB_DATABASE),
+      namespace: String(SURREALDB_NAMESPACE),
     });
     console.info(
-      `using database/namespace ${process.env.SURREALDB_DB}/${process.env.SURREALDB_NS}`
+      `using database/namespace ${SURREALDB_DATABASE}/${SURREALDB_NAMESPACE}`
     );
   }
   return db;
@@ -55,7 +63,7 @@ export async function superjsonQuery<T extends Record<string, unknown>>(
 ): Promise<T[]> {
   const surreal = await getDb();
 
-  const [{ result }] = await surreal.query(
+  const [result] = await surreal.query(
     `SELECT meta, ${fields
       .map((field) => `json.${field}`)
       .join(", ")} FROM ${table} ${

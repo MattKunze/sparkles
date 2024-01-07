@@ -7,7 +7,7 @@ process.on("unhandledRejection", () => {});
 export function capturePromise(
   outputPath: string,
   exportKey: string,
-  startTimestamp: number,
+  executionStart: Date,
   promise: Promise<unknown>
 ) {
   const outputDeferredResult = (
@@ -18,7 +18,7 @@ export function capturePromise(
       deferred: {
         [exportKey]: {
           result,
-          duration: Date.now() - startTimestamp,
+          duration: Date.now() - executionStart.getTime(),
           data,
         },
       },

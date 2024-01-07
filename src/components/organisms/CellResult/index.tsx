@@ -7,7 +7,11 @@ import { SquareStack } from "@/components/icons/SquareStack";
 import { ErrorDetails } from "@/components/molecules/ErrorDetails";
 import { ExportsTable } from "@/components/molecules/ExportsTable";
 import { LogsTable } from "@/components/molecules/LogsTable";
-import { ExecutionMetaInfo, ExecutionResult } from "@/types";
+import {
+  ExecutionMetaInfo,
+  ExecutionDeferredResult,
+  ExecutionResult,
+} from "@/types";
 import { formatDuration } from "@/utils/format";
 
 export type CellExecutionResults = ExecutionMetaInfo & (ExecutionResult | {});
@@ -73,7 +77,14 @@ export function CellResult(props: Props) {
           className="tab-content bg-base-100 border-base-300 rounded p-2"
         >
           {"success" in result ? (
-            <ExportsTable data={result.success.data} />
+            <ExportsTable
+              data={result.success.data}
+              deferred={
+                "deferred" in result
+                  ? (result as ExecutionDeferredResult).deferred
+                  : undefined
+              }
+            />
           ) : "error" in result ? (
             <ErrorDetails
               error={result.error.data}

@@ -1,8 +1,9 @@
 import { readFile } from "fs/promises";
 import path from "path";
-import superjson from "superjson";
 
 import { ExecutionMetaInfo } from "@/types";
+
+import superjson from "./superjson";
 
 export async function buildExecutionScript(
   executionPath: string,

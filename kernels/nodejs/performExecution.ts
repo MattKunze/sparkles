@@ -3,7 +3,6 @@ import { readFile, writeFile } from "fs/promises";
 import vm from "node:vm";
 import path from "path";
 import prettier from "prettier";
-import superjson from "superjson";
 
 import { ExecutionMetaInfo } from "@/types";
 
@@ -14,10 +13,11 @@ import { createExecutionContext } from "./createExecutionContext";
 import { defaultExportPlugin } from "./defaultExportPlugin";
 import { formatError } from "./formatError";
 import { outputResult } from "./outputResult";
+import superjson, { isPromise } from "./superjson";
 
 export async function performExecution(filename: string) {
   const executionPath = path.dirname(filename);
-  const start = Date.now();
+  const executionStart = new Date();
 
   console.info(`Executing job: ${filename}`);
 
@@ -26,7 +26,7 @@ export async function performExecution(filename: string) {
     const meta = superjson.parse(
       await readFile(metaPath, "utf-8")
     ) as ExecutionMetaInfo;
-    meta.executeTimestamp = new Date();
+    meta.executeTimestamp = executionStart;
     await writeFile(metaPath, superjson.stringify(meta));
 
     const content = await readFile(filename, "utf-8");
@@ -51,12 +51,13 @@ export async function performExecution(filename: string) {
       // todo - want to control the environment
       process,
     });
+    const evaluationStart = new Date();
     vm.runInContext(await buildExecutionScript(executionPath, meta), context);
 
     await outputResult(executionPath, {
       success: {
-        duration: Date.now() - start,
-        data: context.module.exports,
+        duration: Date.now() - evaluationStart.getTime(),
+        data: { ...context.module.exports },
       },
     });
 
@@ -64,14 +65,14 @@ export async function performExecution(filename: string) {
     await writeFile(metaPath, superjson.stringify(meta));
 
     for (const [key, value] of Object.entries(context.module.exports)) {
-      if (value instanceof Promise) {
-        capturePromise(executionPath, key, start, value);
+      if (isPromise(value)) {
+        capturePromise(executionPath, key, evaluationStart, value);
       }
     }
   } catch (error: any) {
     await outputResult(executionPath, {
       error: {
-        duration: Date.now() - start,
+        duration: Date.now() - executionStart.getTime(),
         ...formatError(error),
       },
     });
