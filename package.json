@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "run-p dev:app dev:wss",
     "dev:app": "next dev",
-    "dev:wss": "nodemon -w src/server src/server/wsServer.ts",
-    "dev:kernel-nodejs": "nodemon kernels/nodejs/index.ts --",
+    "dev:wss": "tsx --watch src/server/wsServer.ts",
     "docker-compose:up": "docker-compose --env-file .env.local up -d",
     "docker-compose:down": "docker-compose down",
     "build": "next build",
@@ -61,17 +60,12 @@
     "@types/react-dom": "18.2.7",
     "@types/yargs": "17.0.32",
     "autoprefixer": "10.4.15",
-    "esbuild-register": "3.5.0",
     "eslint": "8.49.0",
     "eslint-config-next": "13.4.19",
-    "nodemon": "3.0.2",
     "node-loader": "2.0.0",
     "npm-run-all": "4.1.5",
-    "ts-essentials": "^9.4.0",
-    "typescript": "^5.3.3"
-  },
-  "nodemonConfig": {
-    "ext": "*.ts",
-    "exec": "node -r esbuild-register"
+    "ts-essentials": "9.4.0",
+    "tsx": "4.7.0",
+    "typescript": "5.3.3"
   }
 }

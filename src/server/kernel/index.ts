@@ -155,7 +155,7 @@ export async function enqueueExecution(
     await startContainer(ctx, document.id);
 
     // do better :/
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   const cell = document.cells.find((t) => t.id === cellId);

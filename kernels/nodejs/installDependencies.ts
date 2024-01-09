@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import path from "path";
 
 export async function installDependencies(packageJson: string) {
+  const start = Date.now();
   console.info(`Installing dependencies: ${packageJson}`);
   return new Promise((resolve, reject) => {
     const process = spawn("npm", ["install"], {
@@ -16,6 +17,7 @@ export async function installDependencies(packageJson: string) {
     });
 
     process.on("close", (code) => {
+      console.info(`Dependencies updated in ${Date.now() - start}ms (${code})`);
       code ? reject(code) : resolve(code);
     });
   });

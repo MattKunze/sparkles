@@ -1,1 +1,1 @@
-node -r esbuild-register index.ts -w /workspace
+npx tsx index.ts -w /workspace
