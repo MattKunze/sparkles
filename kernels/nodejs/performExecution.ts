@@ -6,10 +6,9 @@ import prettier from "prettier";
 
 import { ExecutionMetaInfo } from "@/types";
 
-import { buildExecutionScript } from "./buildExecutionScript";
-import { captureConsole } from "./captureConsole";
+import { buildLinkedImports } from "./buildLinkedImports";
 import { capturePromise } from "./capturePromise";
-import { createExecutionContext } from "./createExecutionContext";
+import { runHooked } from "./cls";
 import { defaultExportPlugin } from "./defaultExportPlugin";
 import { formatError } from "./formatError";
 import { outputResult } from "./outputResult";
@@ -17,6 +16,7 @@ import superjson, { isPromise } from "./superjson";
 
 export async function performExecution(filename: string) {
   const executionPath = path.dirname(filename);
+  const executionId = path.basename(executionPath);
   const executionStart = new Date();
 
   console.info(`Executing job: ${filename}`);
@@ -36,40 +36,39 @@ export async function performExecution(filename: string) {
     });
 
     const transformed = await esbuild.transform(formatted, {
-      format: "cjs",
+      format: "esm",
       sourcemap: true,
     });
 
-    await writeFile(path.resolve(executionPath, "index.js"), transformed.code);
+    const linkedImports = await buildLinkedImports(executionPath, meta);
+    await writeFile(
+      path.resolve(executionPath, "index.js"),
+      linkedImports.concat(transformed.code).join("\n")
+    );
     await writeFile(
       path.resolve(executionPath, "index.js.map"),
       transformed.map
     );
 
-    const context = createExecutionContext({
-      console: captureConsole(executionPath),
-      // todo - want to control the environment
-      process,
-    });
     const evaluationStart = new Date();
-    vm.runInContext(await buildExecutionScript(executionPath, meta), context);
+    const exports = await evaluate(executionId, executionPath);
 
     await outputResult(executionPath, {
       success: {
         duration: Date.now() - evaluationStart.getTime(),
-        data: { ...context.module.exports },
+        data: exports,
       },
     });
 
-    meta.exportKeys = Object.keys(context.module.exports);
+    meta.exportKeys = Object.keys(exports);
     await writeFile(metaPath, superjson.stringify(meta));
 
-    for (const [key, value] of Object.entries(context.module.exports)) {
+    for (const [key, value] of Object.entries(exports)) {
       if (isPromise(value)) {
         capturePromise(executionPath, key, evaluationStart, value);
       }
     }
-  } catch (error: any) {
+  } catch (error) {
     await outputResult(executionPath, {
       error: {
         duration: Date.now() - executionStart.getTime(),
@@ -77,4 +76,45 @@ export async function performExecution(filename: string) {
       },
     });
   }
+}
+
+async function evaluate(executionId: string, executionPath: string) {
+  return runHooked(executionId, async () => {
+    const mod = new vm.SourceTextModule(`import "${executionPath}"`);
+
+    await mod.link(linker);
+    await mod.evaluate();
+
+    return linkCache[executionPath].exports;
+  });
+}
+
+const linkCache: Record<string, { exports: any; module: vm.SourceTextModule }> =
+  {};
+async function linker(
+  specifier: string,
+  referencingModule: vm.SourceTextModule
+): Promise<vm.SourceTextModule> {
+  if (linkCache[specifier]) {
+    return linkCache[specifier].module;
+  }
+
+  const exports = await import(specifier);
+  const exportNames = Object.keys(exports);
+
+  const syntheticModule = new vm.SyntheticModule(
+    exportNames,
+    function () {
+      exportNames.forEach((key) => {
+        this.setExport(key, exports[key]);
+      });
+    },
+    { context: referencingModule.context }
+  );
+
+  linkCache[specifier] = {
+    exports,
+    module: syntheticModule,
+  };
+  return syntheticModule;
 }

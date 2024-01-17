@@ -2,6 +2,7 @@ import chokidar from "chokidar";
 import Queue from "queue";
 import yargs from "yargs";
 
+import { captureConsole } from "./captureConsole";
 import { installDependencies } from "./installDependencies";
 import { performExecution } from "./performExecution";
 
@@ -15,6 +16,8 @@ const argv = yargs(process.argv.slice(2))
   .help()
   .alias("help", "h")
   .parseSync();
+
+captureConsole(argv["watch-path"]);
 
 const q = new Queue({
   autostart: true,

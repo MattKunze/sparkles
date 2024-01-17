@@ -5,7 +5,7 @@ import { ExecutionMetaInfo } from "@/types";
 
 import superjson from "./superjson";
 
-export async function buildExecutionScript(
+export async function buildLinkedImports(
   executionPath: string,
   meta: ExecutionMetaInfo
 ) {
@@ -22,17 +22,13 @@ export async function buildExecutionScript(
       if (exportKeys && Object.keys(exportKeys).length) {
         const defaultPos = exportKeys.indexOf("default");
         if (defaultPos >= 0) {
-          exportKeys[defaultPos] = `default: _${executionId}`;
+          exportKeys[defaultPos] = `default as _${executionId}`;
         }
 
-        lines.push(
-          `const { ${exportKeys.join(", ")} } = require("${basePath}");`
-        );
+        lines.push(`import { ${exportKeys.join(", ")} } from "${basePath}";`);
       }
     }
   }
 
-  lines.push(`module.exports = require("${executionPath}");`);
-
-  return lines.join("\n");
+  return lines;
 }

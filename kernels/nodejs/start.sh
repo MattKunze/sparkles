@@ -1,1 +1,1 @@
-npx tsx index.ts -w /workspace
+npx tsx --experimental-vm-modules index.ts -w /workspace

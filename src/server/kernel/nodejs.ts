@@ -13,6 +13,7 @@ export async function updatePackageJson(
 
   const content = JSON.stringify(
     {
+      type: "module",
       dependencies: dependencies.reduce(
         (acc, dep) => {
           acc[dep] = "latest";

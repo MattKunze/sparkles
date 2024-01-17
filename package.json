@@ -29,6 +29,7 @@
     "bufferutil": "^4.0.7",
     "chance": "1.1.11",
     "chokidar": "^3.5.3",
+    "cls-hooked": "^4.2.2",
     "clsx": "^2.0.0",
     "daisyui": "^4.4.20",
     "dockerode": "4.0.0",
@@ -53,6 +54,7 @@
   },
   "devDependencies": {
     "@types/chance": "1.1.6",
+    "@types/cls-hooked": "4.3.8",
     "@types/dockerode": "3.3.23",
     "@types/lodash": "4.14.202",
     "@types/node": "20.6.0",
