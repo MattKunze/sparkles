@@ -1,6 +1,8 @@
 import { outputResult } from "./outputResult";
 import process from "node:process";
 
+import { serializeResult } from "./serializeResult";
+
 // this prevents the app from crashing when a promise is rejected
 process.on("unhandledRejection", () => {});
 
@@ -19,7 +21,7 @@ export function capturePromise(
         [exportKey]: {
           result,
           duration: Date.now() - executionStart.getTime(),
-          data,
+          serialized: serializeResult(data),
         },
       },
     });

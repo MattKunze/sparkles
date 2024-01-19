@@ -3,14 +3,14 @@ import { isEmpty, isEqual } from "lodash";
 import { ExecutionDeferredResult } from "@/types";
 import { formatDuration } from "@/utils/format";
 
-const EMPTY_EXPORTS = { default: undefined };
+const EMPTY_EXPORTS = { default: "undefined" };
 
 type Props = {
-  data: Record<string, unknown>;
+  serializedExports: Record<string, string>;
   deferred?: ExecutionDeferredResult["deferred"];
 };
-export function ExportsTable({ data, deferred }: Props) {
-  if (isEmpty(data) || isEqual(data, EMPTY_EXPORTS)) {
+export function ExportsTable({ serializedExports, deferred }: Props) {
+  if (isEmpty(serializedExports) || isEqual(serializedExports, EMPTY_EXPORTS)) {
     return (
       <div className="alert">
         <span className="font-mono">Empty results</span>
@@ -20,21 +20,16 @@ export function ExportsTable({ data, deferred }: Props) {
   return (
     <table className="table table-sm w-full">
       <tbody>
-        {Object.entries(data)
+        {Object.entries(serializedExports)
           .sort(keySort)
-          .map(([key, value]) => {
-            const { formatted, type } = decodeResult(key, value, deferred);
-
-            return (
-              <tr key={key}>
-                <th className="font-mono">{key}</th>
-                <td className="w-full">
-                  <pre>{formatted}</pre>
-                </td>
-                <td className="whitespace-nowrap">{type}</td>
-              </tr>
-            );
-          })}
+          .map(([key, value]) => (
+            <tr key={key}>
+              <th className="font-mono">{key}</th>
+              <td className="w-full">
+                <pre>{decodeResult(key, value as string, deferred)}</pre>
+              </td>
+            </tr>
+          ))}
       </tbody>
     </table>
   );
@@ -51,25 +46,17 @@ function keySort([lhs]: [string, unknown], [rhs]: [string, unknown]) {
 
 function decodeResult(
   key: string,
-  value: unknown,
+  value: string,
   deferred?: ExecutionDeferredResult["deferred"]
-): { formatted: string; type: string } {
-  let formatted =
-    value === undefined ? "undefined" : JSON.stringify(value, null, 2);
-  let type: string =
-    // intended double equals to catch undefined and null
-    value == null ? formatted : value.constructor.name;
-
-  if (value instanceof Promise) {
-    const d = deferred?.[key];
-    if (d) {
-      type = `${d.result} (${formatDuration(d.duration, "human")})`;
-      formatted = decodeResult(key, d.data).formatted;
-    } else {
-      formatted = "<pending>";
-    }
-  } else if (value instanceof RegExp) {
-    formatted = value.toString();
+): string {
+  const deferredResult = deferred?.[key];
+  if (deferredResult) {
+    // a little ugly to have to rewrite the pending placeholder in place
+    const duration = formatDuration(deferredResult.duration, "human");
+    return value.replace(
+      "<pending>",
+      `<${deferredResult.result} (${duration})> ${deferredResult.serialized}`
+    );
   }
-  return { formatted, type };
+  return value;
 }

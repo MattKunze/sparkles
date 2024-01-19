@@ -3,11 +3,11 @@ import Docker from "dockerode";
 import { EventEmitter } from "events";
 import fs from "fs/promises";
 import path from "path";
+import superjson from "superjson";
 import { ulid } from "ulid";
 
 import { Context } from "@/server/context";
 import { ExecutionMetaInfo, ExecutionResult, NotebookDocument } from "@/types";
-import superjson from "@/utils/superjson";
 
 import { updatePackageJson } from "./nodejs";
 

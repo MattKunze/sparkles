@@ -78,7 +78,7 @@ export function CellResult(props: Props) {
         >
           {"success" in result ? (
             <ExportsTable
-              data={result.success.data}
+              serializedExports={result.success.serializedExports}
               deferred={
                 "deferred" in result
                   ? (result as ExecutionDeferredResult).deferred

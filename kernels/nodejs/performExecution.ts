@@ -3,6 +3,7 @@ import { readFile, writeFile } from "fs/promises";
 import vm from "node:vm";
 import path from "path";
 import prettier from "prettier";
+import superjson from "superjson";
 
 import { ExecutionMetaInfo } from "@/types";
 
@@ -12,7 +13,7 @@ import { runHooked } from "./cls";
 import { defaultExportPlugin } from "./defaultExportPlugin";
 import { formatError } from "./formatError";
 import { outputResult } from "./outputResult";
-import superjson, { isPromise } from "./superjson";
+import { serializeResult } from "./serializeResult";
 
 export async function performExecution(filename: string) {
   const executionPath = path.dirname(filename);
@@ -56,7 +57,15 @@ export async function performExecution(filename: string) {
     await outputResult(executionPath, {
       success: {
         duration: Date.now() - evaluationStart.getTime(),
-        data: exports,
+        serializedExports: Object.entries(
+          exports as Record<string, unknown>
+        ).reduce(
+          (acc, [key, value]) => {
+            acc[key] = serializeResult(value);
+            return acc;
+          },
+          {} as Record<string, string>
+        ),
       },
     });
 
@@ -64,7 +73,7 @@ export async function performExecution(filename: string) {
     await writeFile(metaPath, superjson.stringify(meta));
 
     for (const [key, value] of Object.entries(exports)) {
-      if (isPromise(value)) {
+      if (value instanceof Promise) {
         capturePromise(executionPath, key, evaluationStart, value);
       }
     }

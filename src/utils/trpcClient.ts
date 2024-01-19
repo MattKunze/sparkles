@@ -3,9 +3,9 @@
 import { createWSClient, wsLink } from "@trpc/client";
 import { createTRPCNext } from "@trpc/next";
 import { httpBatchLink, loggerLink } from "@trpc/react-query";
+import superjson from "superjson";
 
 import type { AppRouter } from "@/server/routers/_app";
-import superjson from "@/utils/superjson";
 
 import { createHydrateClient } from "./createHydrateClient";
 

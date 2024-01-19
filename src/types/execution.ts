@@ -17,7 +17,7 @@ export type ExecutionSuccessResult = {
   executionId: string;
   success: {
     duration: number;
-    data: Record<string, unknown>;
+    serializedExports: Record<string, string>;
   };
 };
 
@@ -37,7 +37,7 @@ export type ExecutionDeferredResult = {
     {
       result: "resolved" | "rejected";
       duration: number;
-      data: unknown;
+      serialized: string;
     }
   >;
 };
