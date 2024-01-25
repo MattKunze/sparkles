@@ -1,6 +1,8 @@
 import { deserialize, serialize } from "superjson";
 import { Surreal } from "surrealdb.js";
 
+import { serverConfig } from "@/config";
+
 let db: Surreal | undefined;
 
 export async function getDb() {
@@ -11,7 +13,7 @@ export async function getDb() {
       SURREALDB_PASSWORD,
       SURREALDB_DATABASE,
       SURREALDB_NAMESPACE,
-    } = process.env;
+    } = serverConfig;
 
     db = new Surreal();
     await db.connect(String(SURREALDB_ENDPOINT));

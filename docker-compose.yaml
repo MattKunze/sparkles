@@ -7,7 +7,7 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:latest
     user: root
-    command: start --auth --user $SURREALDB_USER --pass $SURREALDB_PASS file:/data/surreal.db
+    command: start --auth --user $SURREALDB_USERNAME --pass $SURREALDB_PASSWORD file:/data/surreal.db
     pull_policy: always
     ports:
       - "8000:8000"

@@ -6,6 +6,7 @@ import path from "path";
 import superjson from "superjson";
 import { ulid } from "ulid";
 
+import { serverConfig } from "@/config";
 import { Context } from "@/server/context";
 import { ExecutionMetaInfo, ExecutionResult, NotebookDocument } from "@/types";
 
@@ -23,12 +24,9 @@ enum ContainerLabels {
   OWNER = "repl-notebook.owner",
 }
 
-let workspaceRoot: string;
 export function initialize() {
-  workspaceRoot = String(process.env.EXECUTION_WORKSPACE);
-
   chokidar
-    .watch(`${workspaceRoot}/**/*.(json|log)`, {
+    .watch(`${serverConfig.WORKSPACE_ROOT}/**/*.(json|log)`, {
       ignoreInitial: true,
       ignored: [/node_modules/],
     })
@@ -189,7 +187,7 @@ export async function enqueueExecution(
 }
 
 function resolveWorkspacePath(documentId: string) {
-  return path.resolve(workspaceRoot, documentId);
+  return path.resolve(serverConfig.WORKSPACE_ROOT, documentId);
 }
 
 async function emitUpdate(filename: string, meta?: ExecutionMetaInfo) {

@@ -1,15 +1,12 @@
-import dotenv from "dotenv";
 import { applyWSSHandler } from "@trpc/server/adapters/ws";
 import { WebSocketServer } from "ws";
 
+import { sharedConfig } from "@/config";
 import { createContext } from "@/server/context";
 import { initialize as kernelInitialize } from "@/server/kernel";
 import { appRouter } from "@/server/routers/_app";
 
-dotenv.config();
-dotenv.config({ path: ".env.local", override: true });
-
-const port = parseInt(process.env.WSS_PORT ?? "3001", 10);
+const port = parseInt(sharedConfig.WSS_ENDPOINT.split(":").pop()!, 10);
 
 const wss = new WebSocketServer({ port });
 applyWSSHandler({ wss, createContext, router: appRouter });
