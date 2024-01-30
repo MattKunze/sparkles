@@ -1,7 +1,9 @@
+const { IgnorePlugin } = require("webpack");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    instrumentationHook: true,
+  typescript: {
+    ignoreBuildErrors: true,
   },
   webpack: (config) => ({
     ...config,
@@ -16,6 +18,13 @@ const nextConfig = {
         },
       ],
     },
+    // https://github.com/paulmillr/chokidar/issues/828#issuecomment-854474603
+    plugins: [
+      ...config.plugins,
+      ...(process.platform !== "darwin"
+        ? [new IgnorePlugin({ resourceRegExp: /^fsevents$/ })]
+        : []),
+    ],
   }),
 };
 

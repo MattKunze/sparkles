@@ -2,8 +2,28 @@ version: "2"
 
 volumes:
   surrealdb:
+  workspace:
 
 services:
+  # would be nice to split web/wss services
+  node:
+    image: repl-notebook:app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["npm", "run", "dev"]
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    env_file: .env
+    environment:
+      WORKSPACE_ROOT: /app/workspace
+      WORKSPACE_DOCKER_VOLUME: repl-notebook_workspace
+      SURREALDB_ENDPOINT: http://surrealdb:8000/rpc
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - workspace:/app/workspace
+
   surrealdb:
     image: surrealdb/surrealdb:latest
     user: root

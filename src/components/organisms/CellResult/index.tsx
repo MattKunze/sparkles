@@ -46,9 +46,13 @@ export function CellResult(props: Props) {
           })}
         >
           {"success" in result ? (
-            <CheckCircle className="text-green-600" />
+            <CheckCircle
+              className={props.isStale ? "text-gray-500" : "text-green-500"}
+            />
           ) : "error" in result ? (
-            <ExclamationCircle className="text-red-600" />
+            <ExclamationCircle
+              className={props.isStale ? "text-gray-500" : "text-red-500"}
+            />
           ) : (
             <span className="loading loading-spinner text-gray-500"></span>
           )}

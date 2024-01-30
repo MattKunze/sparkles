@@ -45,17 +45,25 @@ export async function startContainer(ctx: Context, documentId: string) {
   const workspacePath = resolveWorkspacePath(documentId);
   await fs.mkdir(workspacePath, { recursive: true });
 
-  console.info(`Starting container: ${documentId}`);
+  const containerWorkspace =
+    serverConfig.WORKSPACE_DOCKER_VOLUME ??
+    path.resolve(serverConfig.WORKSPACE_ROOT, documentId);
+  console.info(`Starting container: ${documentId} (${containerWorkspace})`);
   const container = await docker.createContainer({
     Image: DockerImage,
     HostConfig: {
-      Binds: [`${workspacePath}:/workspace`],
+      Binds: [`${containerWorkspace}:/workspace`],
     },
     Labels: {
       [ContainerLabels.IMAGE]: DockerImage.split(":")[1],
       [ContainerLabels.DOCUMENT]: documentId,
       [ContainerLabels.OWNER]: ctx.session.user.email,
     },
+    // can't bind to execution subfolder until the following is released:
+    // https://github.com/moby/moby/pull/45687
+    // for now we bind the workpsace root and pass the subfolder to watch as
+    // and environment variable
+    Env: [`WORKSPACE_ROOT=/workspace/${documentId}`],
   });
   await container.start();
   return container;

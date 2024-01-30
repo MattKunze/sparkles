@@ -21,6 +21,7 @@ const ServerConfig = z.object({
   SURREALDB_DATABASE: z.string(),
   SURREALDB_NAMESPACE: z.string(),
   WORKSPACE_ROOT: z.string(),
+  WORKSPACE_DOCKER_VOLUME: z.string().optional(),
 });
 
 export const sharedConfig = SharedConfig.parse(process.env);
@@ -29,7 +30,7 @@ let serverConfig: z.infer<typeof ServerConfig>;
 try {
   serverConfig = ServerConfig.parse(process.env);
 } catch (e) {
-  if (isServer()) {
+  if (isServer() && process.env.NEXT_IS_EXPORT_WORKER !== "true") {
     throw e;
   }
 }
