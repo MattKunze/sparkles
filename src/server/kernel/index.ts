@@ -63,7 +63,9 @@ export async function startContainer(ctx: Context, documentId: string) {
     // https://github.com/moby/moby/pull/45687
     // for now we bind the workpsace root and pass the subfolder to watch as
     // and environment variable
-    Env: [`WORKSPACE_ROOT=/workspace/${documentId}`],
+    Env: serverConfig.WORKSPACE_DOCKER_VOLUME
+      ? [`WORKSPACE_ROOT=/workspace/${documentId}`]
+      : undefined,
   });
   await container.start();
   return container;
