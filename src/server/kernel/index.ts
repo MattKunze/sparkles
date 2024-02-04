@@ -8,9 +8,10 @@ import { ulid } from "ulid";
 
 import { serverConfig } from "@/config";
 import { Context } from "@/server/context";
+import { getEnvironment } from "@/server/db";
 import { ExecutionMetaInfo, ExecutionResult, NotebookDocument } from "@/types";
 
-import { updatePackageJson } from "./nodejs";
+import { updateEnvironment, updatePackageJson } from "./nodejs";
 
 export const UPDATE_EVENT = "update";
 export const eventEmitter = new EventEmitter();
@@ -177,7 +178,12 @@ export async function enqueueExecution(
   const executionPath = path.resolve(documentPath, executionId);
   await fs.mkdir(executionPath, { recursive: true });
 
-  updatePackageJson(documentPath, document);
+  await updatePackageJson(documentPath, document);
+
+  const env = document.environmentId
+    ? await getEnvironment(ctx, document.environmentId)
+    : null;
+  await updateEnvironment(documentPath, env);
 
   const meta: ExecutionMetaInfo = {
     executionId,

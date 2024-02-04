@@ -11,7 +11,7 @@ import {
   resolveLatestExecutionInfo,
   UPDATE_EVENT,
 } from "@/server/kernel";
-import { ExecutionMetaInfo, ExecutionResult, NotebookDocument } from "@/types";
+import { ExecutionMetaInfo, ExecutionResult } from "@/types";
 
 import { procedure, router } from "../trpc";
 
@@ -76,7 +76,7 @@ export const kernelRouter = router({
       observable<ExecutionResult & Partial<ExecutionMetaInfo>>((emit) => {
         // can't use async auth check here so this seems the best alternative
         let authorized = false;
-        checkAuthorization(opts.ctx, opts.input.documentId)
+        checkAuthorization(opts.ctx, "notebook", opts.input.documentId)
           .then(() => {
             authorized = true;
 

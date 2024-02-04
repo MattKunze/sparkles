@@ -153,4 +153,20 @@ export const notebookRouter = router({
         }
       )
     ),
+  selectEnvironment: procedure
+    .input(
+      DocumentRef.extend({
+        environmentId: z.string().optional(),
+      })
+    )
+    .mutation((opts) =>
+      mutateNotebookDocument(
+        opts.ctx,
+        opts.input.documentId,
+        opts.input.documentTimestamp,
+        (draft) => {
+          draft.environmentId = opts.input.environmentId;
+        }
+      )
+    ),
 });

@@ -3,7 +3,7 @@ import path from "path";
 
 import { parsers } from "prettier/plugins/typescript";
 
-import { NotebookDocument } from "@/types";
+import { Environment, NotebookDocument } from "@/types";
 
 export async function updatePackageJson(
   basePath: string,
@@ -37,7 +37,21 @@ export async function updatePackageJson(
     }
   } catch {}
 
-  await writeFile(path.resolve(basePath, "package.json"), content);
+  await writeFile(filename, content);
+}
+
+export async function updateEnvironment(
+  basePath: string,
+  environment: Environment | null
+) {
+  const content = environment?.variables
+    ? Object.entries(environment.variables)
+        .map(([key, value]) => `${key}=${value.value}`)
+        .join("\n")
+    : "";
+
+  const filename = path.resolve(basePath, ".env");
+  await writeFile(filename, content);
 }
 
 function extractDependencies(document: NotebookDocument) {

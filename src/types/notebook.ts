@@ -14,10 +14,8 @@ export type NotebookDocument = DeepReadonly<{
   owner: string;
   name: string;
   timestamp: Date;
-  executionContext?: {
-    environmentVariables?: Record<string, string>;
-  };
   cells: NotebookCell[];
+  environmentId?: string;
 }>;
 
 const defaultContent = {
@@ -41,12 +39,10 @@ export function createEmptyCell({
 export function createEmptyDocument({
   owner,
   name,
-  executionContext,
   language,
 }: {
   owner: string;
   name: string;
-  executionContext?: NotebookDocument["executionContext"];
   language?: NotebookCell["language"];
 }): NotebookDocument {
   return {
@@ -54,7 +50,6 @@ export function createEmptyDocument({
     owner,
     name,
     timestamp: new Date(),
-    executionContext,
     cells: [createEmptyCell({ language })],
   };
 }

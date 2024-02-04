@@ -5,9 +5,9 @@ import { PlusCircle } from "@/components/icons/PlusCircle";
 import { NotebookDocument } from "@/types";
 import { trpc } from "@/utils/trpcClient";
 
-import { CellEditor } from "../CellEditor";
-import { CellResult, CellExecutionResults, mergeResults } from "../CellResult";
-import { DocumentHeader } from "../DocumentHeader";
+import { CellEditor } from "./CellEditor";
+import { CellResult, CellExecutionResults, mergeResults } from "./CellResult";
+import { DocumentHeader } from "./DocumentHeader";
 
 type Props = {
   document: NotebookDocument;
@@ -88,7 +88,7 @@ export function NotebookEditor(props: Props) {
 
   return (
     <>
-      <DocumentHeader document={document} />
+      <DocumentHeader document={document} onDocumentUpdate={setDocument} />
       {document.cells.map((cell) => {
         // todo - actually determine if prev cell is referenced
         const pos = document.cells.findIndex((t) => t.id === cell.id);

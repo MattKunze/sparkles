@@ -12,6 +12,7 @@ import { capturePromise } from "./capturePromise";
 import { runHooked } from "./cls";
 import { defaultExportPlugin } from "./defaultExportPlugin";
 import { formatError } from "./formatError";
+import { overrideEnv, parseEnv } from "./environment";
 import { outputResult } from "./outputResult";
 import { serializeResult } from "./serializeResult";
 
@@ -89,10 +90,17 @@ export async function performExecution(filename: string) {
 
 async function evaluate(executionId: string, executionPath: string) {
   return runHooked(executionId, async () => {
-    const mod = new vm.SourceTextModule(`import "${executionPath}"`);
+    const env = await parseEnv(executionPath);
+    const restoreEnv = overrideEnv(env);
 
-    await mod.link(linker);
-    await mod.evaluate();
+    try {
+      const mod = new vm.SourceTextModule(`import "${executionPath}"`);
+
+      await mod.link(linker);
+      await mod.evaluate();
+    } finally {
+      restoreEnv();
+    }
 
     return linkCache[executionPath].exports;
   });
