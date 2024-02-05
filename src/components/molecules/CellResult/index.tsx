@@ -4,15 +4,16 @@ import { useCopyToClipboard } from "@uidotdev/usehooks";
 import { CheckCircle } from "@/components/icons/CheckCircle";
 import { ExclamationCircle } from "@/components/icons/ExclamationCircle";
 import { SquareStack } from "@/components/icons/SquareStack";
-import { ErrorDetails } from "@/components/molecules/ErrorDetails";
-import { ExportsTable } from "@/components/molecules/ExportsTable";
-import { LogsTable } from "@/components/molecules/LogsTable";
 import {
   ExecutionMetaInfo,
   ExecutionDeferredResult,
   ExecutionResult,
 } from "@/types";
 import { formatDuration } from "@/utils/format";
+
+import { ErrorDetails } from "./ErrorDetails";
+import { ExportsTable } from "./ExportsTable";
+import { LogsTable } from "./LogsTable";
 
 export type CellExecutionResults = ExecutionMetaInfo & (ExecutionResult | {});
 
