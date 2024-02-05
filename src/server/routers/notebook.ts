@@ -71,11 +71,7 @@ export const notebookRouter = router({
         (draft) => {
           const cell = createEmptyCell({ language: opts.input.language });
           const pos = draft.cells.findIndex((c) => c.id === opts.input.afterId);
-          if (pos >= 0) {
-            draft.cells.splice(pos + 1, 0, cell);
-          } else {
-            draft.cells.push(cell);
-          }
+          draft.cells.splice(pos >= 0 ? pos + 1 : 0, 0, cell);
         }
       )
     ),

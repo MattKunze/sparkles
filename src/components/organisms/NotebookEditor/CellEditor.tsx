@@ -4,7 +4,6 @@ import Editor, { MonacoDiffEditor } from "@monaco-editor/react";
 import { useEffect, useRef, useState } from "react";
 
 import { Play } from "@/components/icons/Play";
-import { XMark } from "@/components/icons/XMark";
 import { NotebookCell } from "@/types";
 
 const DefaultEditorOptions = {
@@ -26,7 +25,6 @@ const LanguageExtensions: Record<NotebookCell["language"], string> = {
 
 type Props = {
   cell: NotebookCell;
-  onDelete: () => void;
   onEvaluate: () => void;
   onUpdate: (content: string) => void;
 };
@@ -76,15 +74,7 @@ export function CellEditor(props: Props) {
           <Play />
         </button>
       </div>
-      <div className="flex-grow border rounded pt-4 pr-2 bg-white relative">
-        <div className="absolute -top-3 -right-3">
-          <button
-            className="btn btn-xs btn-secondary px-0 opacity-0 group-focus-within:opacity-100 transition-opacity"
-            onClick={props.onDelete}
-          >
-            <XMark />
-          </button>
-        </div>
+      <div className="flex-grow border rounded pt-4 pr-2 bg-white">
         <Editor
           path={props.cell.id}
           height={`${(lineCount + 1) * 18}px`}

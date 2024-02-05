@@ -4,10 +4,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Trash } from "@/components/icons/Trash";
+import { EnvironmentDropdown } from "@/components/molecules/EnvironmentDropdown";
 import { NotebookDocument } from "@/types";
 import { trpc } from "@/utils/trpcClient";
-
-import { EnvironmentDropdown } from "./EnvironmentDropdown";
 
 type Props = {
   document: NotebookDocument;
@@ -64,7 +63,7 @@ export function DocumentHeader(props: Props) {
   );
 
   return (
-    <div className="flex items-center justify-between my-1 mr-2">
+    <div className="flex items-center justify-between my-1">
       <input
         className="text-2xl font-bold grow bg-transparent"
         value={name}
