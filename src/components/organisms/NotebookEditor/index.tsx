@@ -1,6 +1,6 @@
 "use client";
+import { DndContext } from "@dnd-kit/core";
 import { useEffect, useState } from "react";
-import clsx from "clsx";
 
 import {
   CellExecutionResults,
@@ -10,8 +10,9 @@ import { NotebookDocument } from "@/types";
 import { trpc } from "@/utils/trpcClient";
 
 import { CellSection } from "./CellSection";
+import { DragMonitor } from "./DragMonitor";
 import { DocumentHeader } from "./DocumentHeader";
-import { HandleToolbar } from "./HandleToolbar";
+import { TopPlaceholder } from "./TopPlaceholder";
 
 type CellHighlight = { cellId: string; key: string } | null;
 type Props = {
@@ -41,6 +42,9 @@ export function NotebookEditor(props: Props) {
     onSuccess: setDocument,
   });
   const updateCell = trpc.notebook.updateCell.useMutation({
+    onSuccess: setDocument,
+  });
+  const moveCell = trpc.notebook.moveCell.useMutation({
     onSuccess: setDocument,
   });
   const evaluateCell = trpc.kernel.evaluateCell.useMutation({
@@ -93,68 +97,70 @@ export function NotebookEditor(props: Props) {
   );
 
   return (
-    <div className="flex flex-col gap-2 px-2">
-      <div>
-        <DocumentHeader document={document} onDocumentUpdate={setDocument} />
-        <div className="flex flex-col p-2 gap-2">
-          <HandleToolbar
+    <DndContext>
+      <DragMonitor
+        onMoveCell={(cellId, afterId) =>
+          moveCell.mutate({
+            documentId: document.id,
+            documentTimestamp: document.timestamp,
+            cellId,
+            afterId,
+          })
+        }
+      />
+      <div className="flex flex-col gap-2 px-2">
+        <div>
+          <DocumentHeader document={document} onDocumentUpdate={setDocument} />
+          <TopPlaceholder
+            cellHighlight={cellHighlight}
+            setCellHighlight={setCellHighlight}
             onAdd={() =>
               addCell.mutate({
                 documentId: document.id,
                 documentTimestamp: document.timestamp,
               })
             }
-            onHoverChange={(key, isHover) =>
-              setCellHighlight(isHover ? { cellId: "__top__", key } : null)
-            }
-          />
-          <div
-            className={clsx("ring-1 rounded ring-transparent", {
-              "!ring-green-400":
-                cellHighlight?.cellId === "__top__" &&
-                cellHighlight.key === "add",
-            })}
           />
         </div>
+        {document.cells.map((cell) => (
+          <CellSection
+            key={cell.id}
+            document={document}
+            cell={cell}
+            result={executionResults[cell.id]}
+            cellHighlight={cellHighlight}
+            setCellHighlight={setCellHighlight}
+            onEvaluate={() =>
+              evaluateCell.mutate({
+                documentId: document.id,
+                cellId: cell.id,
+              })
+            }
+            onUpdate={(content) =>
+              updateCell.mutate({
+                documentId: document.id,
+                documentTimestamp: document.timestamp,
+                cellId: cell.id,
+                content,
+              })
+            }
+            onAddBelow={() =>
+              addCell.mutate({
+                documentId: document.id,
+                documentTimestamp: document.timestamp,
+                afterId: cell.id,
+              })
+            }
+            onDelete={() =>
+              deleteCell.mutate({
+                documentId: document.id,
+                documentTimestamp: document.timestamp,
+                cellId: cell.id,
+              })
+            }
+          />
+        ))}
       </div>
-      {document.cells.map((cell) => (
-        <CellSection
-          key={cell.id}
-          document={document}
-          cell={cell}
-          result={executionResults[cell.id]}
-          cellHighlight={cellHighlight}
-          setCellHighlight={setCellHighlight}
-          onEvaluate={() =>
-            evaluateCell.mutate({
-              documentId: document.id,
-              cellId: cell.id,
-            })
-          }
-          onUpdate={(content) =>
-            updateCell.mutate({
-              documentId: document.id,
-              documentTimestamp: document.timestamp,
-              cellId: cell.id,
-              content,
-            })
-          }
-          onAddBelow={() =>
-            addCell.mutate({
-              documentId: document.id,
-              documentTimestamp: document.timestamp,
-              afterId: cell.id,
-            })
-          }
-          onDelete={() =>
-            deleteCell.mutate({
-              documentId: document.id,
-              documentTimestamp: document.timestamp,
-              cellId: cell.id,
-            })
-          }
-        />
-      ))}
-    </div>
+    </DndContext>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import clsx from "clsx";
 
 import { CellEditor } from "@/components/molecules/CellEditor";
@@ -37,17 +38,31 @@ export function CellSection({
   // todo - actually determine which previous cells are referenced
   const linkedCells = document.cells.slice(0, pos);
 
+  const { isOver, setNodeRef: setDroppableRef } = useDroppable({ id: cell.id });
+  const {
+    active,
+    attributes,
+    listeners,
+    transform,
+    setNodeRef: setDraggableRef,
+  } = useDraggable({ id: cell.id });
+
   return (
     <>
       <div
         key={cell.id}
+        ref={setDroppableRef}
         className={clsx(
           "flex flex-col p-2 gap-2 ring-2 rounded ring-transparent",
           {
+            "opacity-50 bg-neutral-content": !!transform,
             "!ring-indigo-200":
-              cellHighlight?.cellId === cell.id &&
-              cellHighlight.key === "handle",
+              (isOver && transform) ||
+              (!active &&
+                cellHighlight?.cellId === cell.id &&
+                cellHighlight.key === "handle"),
             "!ring-red-400":
+              !active &&
               cellHighlight?.cellId === cell.id &&
               cellHighlight.key === "delete",
           }
@@ -63,6 +78,10 @@ export function CellSection({
           />
         )}
         <HandleToolbar
+          disableHover={!!active}
+          setDraggableRef={setDraggableRef}
+          dragAttributes={attributes}
+          dragListeners={listeners}
           onAdd={onAddBelow}
           onDelete={onDelete}
           onHoverChange={(key, isHover) =>
@@ -72,6 +91,7 @@ export function CellSection({
       </div>
       <div
         className={clsx("mx-2 ring-1 rounded ring-transparent", {
+          "!ring-purple-400": isOver && !transform,
           "!ring-green-400":
             cell.id === cellHighlight?.cellId && cellHighlight.key === "add",
         })}

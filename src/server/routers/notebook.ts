@@ -141,11 +141,7 @@ export const notebookRouter = router({
           const after = draft.cells.findIndex(
             (c) => c.id === opts.input.afterId
           );
-          if (after >= 0) {
-            draft.cells.splice(after + 1, 0, cell);
-          } else {
-            draft.cells.push(cell);
-          }
+          draft.cells.splice(after >= 0 ? after + 1 : 0, 0, cell);
         }
       )
     ),
