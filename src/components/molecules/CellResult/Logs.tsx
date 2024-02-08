@@ -6,7 +6,7 @@ type Props = {
   executionStart: Date;
   logs: ExecutionLogResult["logs"];
 };
-export function LogsTable({ executionStart, logs }: Props) {
+export function Logs({ executionStart, logs }: Props) {
   return (
     <table className="table table-xs w-full">
       <tbody>

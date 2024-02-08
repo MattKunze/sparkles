@@ -12,8 +12,8 @@ import {
 import { formatDuration } from "@/utils/format";
 
 import { ErrorDetails } from "./ErrorDetails";
-import { ExportsTable } from "./ExportsTable";
-import { LogsTable } from "./LogsTable";
+import { Exports } from "./Exports";
+import { Logs } from "./Logs";
 
 export type CellExecutionResults = ExecutionMetaInfo & (ExecutionResult | {});
 
@@ -82,7 +82,7 @@ export function CellResult(props: Props) {
           className="tab-content bg-base-100 border-base-300 rounded p-2"
         >
           {"success" in result ? (
-            <ExportsTable
+            <Exports
               serializedExports={result.success.serializedExports}
               deferred={
                 "deferred" in result
@@ -117,7 +117,7 @@ export function CellResult(props: Props) {
           )}
         >
           {"logs" in result && result.logs && (
-            <LogsTable
+            <Logs
               executionStart={result.executeTimestamp ?? result.createTimestamp}
               logs={result.logs}
             />
