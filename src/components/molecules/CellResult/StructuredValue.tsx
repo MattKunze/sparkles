@@ -79,7 +79,7 @@ export function StructuredValue({ value }: Props) {
                     onClick={() => toggle(index, entry)}
                   >
                     <ChevronDown
-                      className={clsx("w-4 transition-transform", {
+                      className={clsx("!w-4 transition-transform", {
                         "transform -rotate-90": isCollapsed,
                       })}
                     />
