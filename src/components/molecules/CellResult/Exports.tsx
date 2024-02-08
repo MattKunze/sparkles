@@ -3,7 +3,7 @@ import { isEmpty, isEqual } from "lodash";
 import { ExecutionDeferredResult } from "@/types";
 import { formatDuration } from "@/utils/format";
 
-import { CollapsableValue } from "./CollapsableValue";
+import { StructuredValue } from "./StructuredValue";
 
 const EMPTY_EXPORTS = { default: "undefined" };
 
@@ -30,7 +30,7 @@ export function Exports({ serializedExports, deferred }: Props) {
               <tr key={key}>
                 <th className="font-mono">{key}</th>
                 <td className="w-full">
-                  <CollapsableValue
+                  <StructuredValue
                     value={
                       deferredResult && value.includes("<pending>")
                         ? replacePendingPlaceholder(value, deferredResult)
