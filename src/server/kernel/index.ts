@@ -42,22 +42,23 @@ export async function listContainers(ctx: Context) {
   );
 }
 
-export async function startContainer(ctx: Context, documentId: string) {
-  const workspacePath = resolveWorkspacePath(documentId);
+export async function startContainer(ctx: Context, document: NotebookDocument) {
+  const workspacePath = resolveWorkspacePath(document.id);
   await fs.mkdir(workspacePath, { recursive: true });
 
   const containerWorkspace =
     serverConfig.WORKSPACE_DOCKER_VOLUME ??
-    path.resolve(serverConfig.WORKSPACE_ROOT, documentId);
-  console.info(`Starting container: ${documentId} (${containerWorkspace})`);
+    path.resolve(serverConfig.WORKSPACE_ROOT, document.id);
+  console.info(`Starting container: ${document.id} (${containerWorkspace})`);
   const container = await docker.createContainer({
     Image: DockerImage,
+    name: containerName(document),
     HostConfig: {
       Binds: [`${containerWorkspace}:/workspace`],
     },
     Labels: {
       [ContainerLabels.IMAGE]: DockerImage.split(":")[1],
-      [ContainerLabels.DOCUMENT]: documentId,
+      [ContainerLabels.DOCUMENT]: document.id,
       [ContainerLabels.OWNER]: ctx.session.user.email,
     },
     // can't bind to execution subfolder until the following is released:
@@ -65,7 +66,7 @@ export async function startContainer(ctx: Context, documentId: string) {
     // for now we bind the workpsace root and pass the subfolder to watch as
     // and environment variable
     Env: serverConfig.WORKSPACE_DOCKER_VOLUME
-      ? [`WORKSPACE_ROOT=/workspace/${documentId}`]
+      ? [`WORKSPACE_ROOT=/workspace/${document.id}`]
       : undefined,
   });
   await container.start();
@@ -161,7 +162,7 @@ export async function enqueueExecution(
   linkedExecutionIds?: string[]
 ): Promise<ExecutionMetaInfo> {
   if (!(await findContainer(ctx, document.id))) {
-    await startContainer(ctx, document.id);
+    await startContainer(ctx, document);
 
     // do better :/
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -242,6 +243,15 @@ async function emitUpdate(filename: string, meta?: ExecutionMetaInfo) {
 
   eventEmitter.emit(UPDATE_EVENT, documentId, { ...meta, ...result });
 }
+
+const containerName = (document: NotebookDocument) =>
+  [
+    document.id.slice(-7).toLocaleLowerCase(),
+    document.name
+      .toLocaleLowerCase()
+      .replace(/ /g, "_")
+      .replace(/[^0-9a-z-_]/g, ""),
+  ].join("-");
 
 const parseLogResult = (raw: string) =>
   raw.split("\n").filter(Boolean).map(parseLogLine);
