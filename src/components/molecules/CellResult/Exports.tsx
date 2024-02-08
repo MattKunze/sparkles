@@ -20,29 +20,25 @@ export function Exports({ serializedExports, deferred }: Props) {
     );
   }
   return (
-    <table className="table table-sm w-full">
-      <tbody>
-        {Object.entries(serializedExports)
-          .sort(keySort)
-          .map(([key, value]) => {
-            const deferredResult = deferred?.[key];
-            return (
-              <tr key={key}>
-                <th className="font-mono">{key}</th>
-                <td className="w-full">
-                  <StructuredValue
-                    value={
-                      deferredResult && value.includes("<pending>")
-                        ? replacePendingPlaceholder(value, deferredResult)
-                        : value
-                    }
-                  />
-                </td>
-              </tr>
-            );
-          })}
-      </tbody>
-    </table>
+    <div className="p-2 grid grid-cols-[minmax(75px,max-content)_1fr] gap-4 text-sm">
+      {Object.entries(serializedExports)
+        .sort(keySort)
+        .map(([key, value]) => {
+          const deferredResult = deferred?.[key];
+          return (
+            <>
+              <div className="self-center font-mono font-bold">{key}</div>
+              <StructuredValue
+                value={
+                  deferredResult && value.includes("<pending>")
+                    ? replacePendingPlaceholder(value, deferredResult)
+                    : value
+                }
+              />
+            </>
+          );
+        })}
+    </div>
   );
 }
 

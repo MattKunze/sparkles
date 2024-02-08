@@ -40,15 +40,15 @@ export function StructuredValue({ value }: Props) {
 
   let skipUntil: number | undefined = undefined;
   return (
-    <>
-      {maxDepth > 0 && (
+    <div className="overflow-x-hidden">
+      {(maxDepth > 1 || info.length >= MAX_INITIAL_LINES) && (
         <div className={rangeWidth(maxDepth)}>
           <input
             type="range"
             min={0}
             max={`${maxDepth}`}
             value={`${foldDepth}`}
-            className="range range-primary range-xs"
+            className="range range-primary range-xs max-w-xl"
             onChange={(e) => {
               const depth = parseInt(e.target.value, 10);
               setCollapsed(collapseAt(info, maxDepth - depth));
@@ -57,41 +57,43 @@ export function StructuredValue({ value }: Props) {
           />
         </div>
       )}
-      {info.map((entry, index) => {
-        if (skipUntil !== undefined && index <= skipUntil) {
-          return null;
-        }
-        skipUntil = undefined;
+      <div className="overflow-x-auto">
+        {info.map((entry, index) => {
+          if (skipUntil !== undefined && index <= skipUntil) {
+            return null;
+          }
+          skipUntil = undefined;
 
-        const isCollapsed = collapsed.has(index);
-        if (isCollapsed) {
-          skipUntil = entry.pair;
-        }
+          const isCollapsed = collapsed.has(index);
+          if (isCollapsed) {
+            skipUntil = entry.pair;
+          }
 
-        return (
-          <div key={index} className="flex items-center">
-            <span className="w-6">
-              {entry.pair !== undefined && entry.pair > index && (
-                <span
-                  className="text-gray-500 hover:text-gray-200 cursor-pointer"
-                  onClick={() => toggle(index, entry)}
-                >
-                  <ChevronDown
-                    className={clsx("w-4 transition-transform", {
-                      "transform -rotate-90": isCollapsed,
-                    })}
-                  />
-                </span>
-              )}
-            </span>
-            <pre>
-              {entry.line}
-              {isCollapsed && ` ... ${info[entry.pair!].line.trimStart()}`}
-            </pre>
-          </div>
-        );
-      })}
-    </>
+          return (
+            <div key={index} className="flex items-center">
+              <span className="w-6">
+                {entry.pair !== undefined && entry.pair > index && (
+                  <span
+                    className="text-gray-500 hover:text-gray-200 cursor-pointer"
+                    onClick={() => toggle(index, entry)}
+                  >
+                    <ChevronDown
+                      className={clsx("w-4 transition-transform", {
+                        "transform -rotate-90": isCollapsed,
+                      })}
+                    />
+                  </span>
+                )}
+              </span>
+              <pre>
+                {entry.line}
+                {isCollapsed && ` ... ${info[entry.pair!].line.trimStart()}`}
+              </pre>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
