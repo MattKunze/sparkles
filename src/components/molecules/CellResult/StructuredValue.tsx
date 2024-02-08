@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { ChevronDown } from "@/components/icons/ChevronDown";
 
 import { LineInfo, parseFoldingRegions } from "./folding";
+import { ColorMap, syntaxHighlight } from "./highlight";
 
 const MAX_INITIAL_LINES = 10;
 
@@ -86,8 +87,13 @@ export function StructuredValue({ value }: Props) {
                 )}
               </span>
               <pre>
-                {entry.line}
-                {isCollapsed && ` ... ${info[entry.pair!].line.trimStart()}`}
+                {syntaxHighlight(entry.line)}
+                {isCollapsed && (
+                  <>
+                    <span className={ColorMap.String}> ... </span>
+                    {syntaxHighlight(info[entry.pair!].line.trimStart())}
+                  </>
+                )}
               </pre>
             </div>
           );

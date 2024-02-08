@@ -23,20 +23,21 @@ export function Exports({ serializedExports, deferred }: Props) {
     <div className="p-2 grid grid-cols-[minmax(75px,max-content)_1fr] gap-4 text-sm">
       {Object.entries(serializedExports)
         .sort(keySort)
-        .map(([key, value]) => {
+        .flatMap(([key, value], index) => {
           const deferredResult = deferred?.[key];
-          return (
-            <>
-              <div className="self-center font-mono font-bold">{key}</div>
-              <StructuredValue
-                value={
-                  deferredResult && value.includes("<pending>")
-                    ? replacePendingPlaceholder(value, deferredResult)
-                    : value
-                }
-              />
-            </>
-          );
+          return [
+            <div key={`k_${index}`} className="self-center font-mono font-bold">
+              {key}
+            </div>,
+            <StructuredValue
+              key={`v_${index}`}
+              value={
+                deferredResult && value.includes("<pending>")
+                  ? replacePendingPlaceholder(value, deferredResult)
+                  : value
+              }
+            />,
+          ];
         })}
     </div>
   );
