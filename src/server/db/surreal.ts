@@ -56,7 +56,7 @@ export async function superjsonSelect<T extends Record<string, unknown>>(
 
 export async function superjsonQuery<T extends Record<string, unknown>>(
   table: string,
-  fields: string[],
+  fields: readonly string[],
   // don't love how this leaks superjson serialization details
   filter?: {
     whereClause: string;

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { ElementRef, useRef } from "react";
 import clsx from "clsx";
 
 import { Environment } from "@/types";
@@ -10,7 +10,7 @@ type Props = {
 };
 
 export function EnvironmentDropdown(props: Props) {
-  const dropdownRef = useRef<HTMLDetailsElement>(null);
+  const dropdownRef = useRef<ElementRef<"details">>(null);
 
   return (
     <details ref={dropdownRef} className="dropdown dropdown-end">
@@ -21,7 +21,7 @@ export function EnvironmentDropdown(props: Props) {
       >
         {props.selectedEnvironment
           ? props.selectedEnvironment.name
-          : "[no environment]"}
+          : "[no env]"}
       </summary>
       <ul
         tabIndex={0}

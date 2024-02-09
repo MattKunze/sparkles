@@ -9,15 +9,21 @@ import SearchInput from "@/components/molecules/SearchInput";
 import { randomDocumentId } from "@/types";
 import { trpc } from "@/utils/trpcClient";
 
+import { TagsPopup } from "./TagsPopup";
+
 export default function DocumentList() {
   const pathname = usePathname();
   const router = useRouter();
   const documents = trpc.notebook.list.useQuery();
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useState<string[]>([]);
 
   let filteredDocuments = documents.data
-    ? documents.data.filter(
-        (t) => !filter || t.name.toLowerCase().includes(filter.toLowerCase())
+    ? documents.data.filter((doc) =>
+        filter.every(
+          (f) =>
+            includesLowerCase(doc.name, f) ||
+            doc.tags?.some((tag) => includesLowerCase(tag, f))
+        )
       )
     : undefined;
 
@@ -31,7 +37,7 @@ export default function DocumentList() {
               <li key={info.id}>
                 <Link
                   href={`/editor/${encodeURIComponent(info.id)}`}
-                  className={clsx({
+                  className={clsx("flex justify-between", {
                     active:
                       pathname &&
                       [
@@ -40,7 +46,8 @@ export default function DocumentList() {
                       ].includes(pathname),
                   })}
                 >
-                  {info.name}
+                  <span>{info.name}</span>
+                  {info.tags?.length && <TagsPopup tags={info.tags} />}
                 </Link>
               </li>
             ))
@@ -81,4 +88,8 @@ function LoadingSkeleton() {
       <div className="skeleton h-6"></div>
     </div>
   );
+}
+
+function includesLowerCase(str: string, search: string) {
+  return str.toLowerCase().includes(search.toLowerCase());
 }

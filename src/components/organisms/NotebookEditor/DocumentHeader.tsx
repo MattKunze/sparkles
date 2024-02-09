@@ -5,8 +5,11 @@ import { useEffect, useState } from "react";
 
 import { Trash } from "@/components/icons/Trash";
 import { EnvironmentDropdown } from "@/components/molecules/EnvironmentDropdown";
+import { TagsEditor } from "@/components/molecules/TagsEditor";
 import { NotebookDocument } from "@/types";
 import { trpc } from "@/utils/trpcClient";
+
+import { useAvailableTags } from "./useAvailableTags";
 
 type Props = {
   document: NotebookDocument;
@@ -20,7 +23,26 @@ export function DocumentHeader(props: Props) {
   const debouncedName = useDebounce(name, 500);
 
   const environments = trpc.environment.list.useQuery();
+  const availableTags = useAvailableTags();
 
+  const setTags = trpc.notebook.setTags.useMutation({
+    onSuccess: (data) => {
+      utils.notebook.get.setData({ nameOrId: data.name }, data);
+
+      // seems out of place here, but necessary so useAvailableTags will update
+      const list = utils.notebook.list.getData();
+      if (list) {
+        const pos = list.findIndex((t) => t.id === data.id) ?? -1;
+        if (pos >= 0) {
+          const update = [...list];
+          update[pos] = data;
+          utils.notebook.list.setData(undefined, update);
+        }
+      }
+
+      props.onDocumentUpdate(data);
+    },
+  });
   const selectEnvironment = trpc.notebook.selectEnvironment.useMutation({
     onSuccess: (data) => {
       utils.notebook.get.setData({ nameOrId: data.name }, data);
@@ -69,7 +91,18 @@ export function DocumentHeader(props: Props) {
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      <div className="flex items-center ml-2">
+      <div className="flex items-center ml-2 gap-2">
+        <TagsEditor
+          availableTags={availableTags}
+          tags={document.tags ?? []}
+          setTags={(tags) => {
+            setTags.mutate({
+              documentId: document.id,
+              documentTimestamp: document.timestamp,
+              tags,
+            });
+          }}
+        />
         <EnvironmentDropdown
           environments={environments.data ?? []}
           selectedEnvironment={environments.data?.find(
@@ -84,7 +117,7 @@ export function DocumentHeader(props: Props) {
           }}
         />
         <button
-          className="btn btn-sm btn-accent btn-outline ml-2"
+          className="btn btn-sm btn-accent btn-outline"
           onClick={() => deleteDocument.mutate(document)}
         >
           <Trash />

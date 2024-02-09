@@ -15,7 +15,8 @@ import {
 
 const NOTEBOOK_TYPE = "notebook";
 const ENVIRONMENT_TYPE = "environment";
-export type DocumentType = typeof NOTEBOOK_TYPE | typeof ENVIRONMENT_TYPE;
+const DocumentTypes = [NOTEBOOK_TYPE, ENVIRONMENT_TYPE] as const;
+export type DocumentType = (typeof DocumentTypes)[number];
 
 export async function checkAuthorization<
   T extends { id: string; owner: string },
@@ -35,11 +36,8 @@ export async function checkAuthorization<
   return doc;
 }
 
-type DocumentInfo = Pick<
-  NotebookDocument,
-  "id" | "name" | "owner" | "timestamp"
->;
-const DocumentInfoKeys = ["id", "name", "owner", "timestamp"];
+const DocumentInfoKeys = ["id", "name", "owner", "timestamp", "tags"] as const;
+type DocumentInfo = Pick<NotebookDocument, (typeof DocumentInfoKeys)[number]>;
 
 export async function getDocumentInfo(
   ctx: Context

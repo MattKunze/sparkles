@@ -13,6 +13,7 @@ export type NotebookDocument = DeepReadonly<{
   id: string;
   owner: string;
   name: string;
+  tags?: string[];
   timestamp: Date;
   cells: NotebookCell[];
   environmentId?: string;

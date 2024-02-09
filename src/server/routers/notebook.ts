@@ -40,6 +40,22 @@ export const notebookRouter = router({
         }
       )
     ),
+  setTags: procedure
+    .input(
+      DocumentRef.extend({
+        tags: z.array(z.string()),
+      })
+    )
+    .mutation((opts) =>
+      mutateNotebookDocument(
+        opts.ctx,
+        opts.input.documentId,
+        opts.input.documentTimestamp,
+        (draft) => {
+          draft.tags = opts.input.tags.sort();
+        }
+      )
+    ),
   delete: procedure
     .input(
       z.object({
