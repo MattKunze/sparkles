@@ -42,13 +42,13 @@ export function EnvironmentManager() {
         </article>
         <div className="join">
           <input
-            className="input input-bordered join-item"
+            className="input input-bordered input-sm join-item"
             placeholder="Create..."
             value={newEnvironmentName}
             onChange={(e) => setNewEnvironmentName(e.target.value)}
           />
           <button
-            className="btn join-item rounded-r-full"
+            className="btn btn-sm join-item"
             disabled={!newEnvironmentName}
             onClick={() => createEnv.mutate({ name: newEnvironmentName })}
           >

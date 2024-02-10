@@ -4,6 +4,7 @@ import { useCopyToClipboard } from "@uidotdev/usehooks";
 import { CheckCircle } from "@/components/icons/CheckCircle";
 import { ExclamationCircle } from "@/components/icons/ExclamationCircle";
 import { SquareStack } from "@/components/icons/SquareStack";
+import { useToastContext } from "@/components/organisms/ToastContext";
 import {
   ExecutionMetaInfo,
   ExecutionDeferredResult,
@@ -24,6 +25,7 @@ type Props = {
 export function CellResult(props: Props) {
   const { result } = props;
 
+  const { showToast } = useToastContext();
   const [, copyToClipboard] = useCopyToClipboard();
 
   const queueDuration = result.executeTimestamp
@@ -64,7 +66,14 @@ export function CellResult(props: Props) {
           ...{result.executionId.slice(-7)}
           <a
             className="cursor-pointer"
-            onClick={() => copyToClipboard(result.executionId)}
+            onClick={() => {
+              copyToClipboard(result.executionId);
+              showToast({
+                message: `Copied ${result.executionId}`,
+                icon: true,
+                delay: 1000,
+              });
+            }}
           >
             <SquareStack className="pl-1" />
           </a>

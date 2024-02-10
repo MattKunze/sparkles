@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Trash } from "@/components/icons/Trash";
 import { EnvironmentDropdown } from "@/components/molecules/EnvironmentDropdown";
 import { TagsEditor } from "@/components/molecules/TagsEditor";
+import { useToastContext } from "@/components/organisms/ToastContext";
 import { NotebookDocument } from "@/types";
 import { trpc } from "@/utils/trpcClient";
 
@@ -22,6 +23,7 @@ export function DocumentHeader(props: Props) {
   const [name, setName] = useState(document.name);
   const debouncedName = useDebounce(name, 500);
 
+  const { showToast } = useToastContext();
   const environments = trpc.environment.list.useQuery();
   const availableTags = useAvailableTags();
 
@@ -66,6 +68,12 @@ export function DocumentHeader(props: Props) {
     },
     onSuccess: () => {
       utils.notebook.list.invalidate();
+      showToast({
+        message: "Document deleted",
+        type: "error",
+        icon: true,
+        delay: 2000,
+      });
     },
   });
 
