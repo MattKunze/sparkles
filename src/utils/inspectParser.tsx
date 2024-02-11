@@ -43,7 +43,7 @@ type DeferredLineInfo = (PairedLineInfo | ValueLineInfo) & {
   status: string;
 };
 
-export type ConcreteLineInfo =
+export type ParsedLineInfo =
   | PropertyLineInfo
   | DeferredLineInfo
   | PairedLineInfo
@@ -94,12 +94,12 @@ const ValueTests: Array<{
 
 const LinePattern = /^(?<indent>\s*)(?<content>.*?)(?<trailing>,)?$/;
 
-export function parseInspectRepresentation(raw: string): ConcreteLineInfo[] {
+export function parseInspectRepresentation(raw: string): ParsedLineInfo[] {
   const lines = raw.split("\n");
 
   const openRegions: Array<{ pos: number; match: string }> = [];
 
-  const info: ConcreteLineInfo[] = [];
+  const info: ParsedLineInfo[] = [];
   for (const [pos, line] of lines.entries()) {
     let { indent, content, trailing } = line.match(LinePattern)!.groups!;
 
@@ -151,7 +151,7 @@ export function parseInspectRepresentation(raw: string): ConcreteLineInfo[] {
       }
     }
 
-    info.push(lineInfo as ConcreteLineInfo);
+    info.push(lineInfo as ParsedLineInfo);
   }
 
   if (openRegions.length > 0) {
@@ -161,7 +161,7 @@ export function parseInspectRepresentation(raw: string): ConcreteLineInfo[] {
   return info;
 }
 
-export function renderLine(line: ConcreteLineInfo): React.ReactNode[] {
+export function renderLine(line: ParsedLineInfo): React.ReactNode[] {
   return [
     line.indent,
     "key" in line ? renderKey(line.key) : null,
@@ -238,7 +238,7 @@ function renderValue(type: LineValueType, value: string): React.ReactNode {
 }
 
 export function renderCollapsed(
-  lineInfo: ConcreteLineInfo[],
+  lineInfo: ParsedLineInfo[],
   pos: number
 ): React.ReactNode[] {
   const start = lineInfo[pos] as PairedLineInfo;
@@ -250,4 +250,74 @@ export function renderCollapsed(
     </span>,
     ...renderLine({ ...end, indent: "" }),
   ];
+}
+
+export function toJSON(info: ParsedLineInfo[]): unknown {
+  const stack: unknown[] = [];
+
+  for (const [_, entry] of info.entries()) {
+    let value: unknown;
+    let pushStack = false;
+    switch (entry.type) {
+      case "object-start":
+        value = {};
+        pushStack = true;
+        break;
+      case "array-start":
+        value = [];
+        pushStack = true;
+        break;
+      case "object-end":
+      case "array-end":
+        if (stack.length > 1) {
+          stack.pop();
+        }
+        continue;
+      case "undefined":
+        value = undefined;
+        break;
+      case "null":
+        value = null;
+        break;
+      case "boolean":
+        value = entry.content === "true";
+        break;
+      case "number":
+        value = parseFloat(entry.content);
+        break;
+      case "string":
+        value = entry.content.slice(1, -1);
+        break;
+      case "regexp":
+        const [, pattern, flags] = entry.content.split("/");
+        value = new RegExp(pattern, flags);
+        break;
+      case "date":
+        value = new Date(entry.content);
+        break;
+      // todo
+      case "symbol":
+      case "deferred":
+        break;
+    }
+
+    const parent = stack[stack.length - 1];
+    if (!parent || pushStack) {
+      stack.push(value);
+    }
+    if (Array.isArray(parent)) {
+      parent.push(value);
+    } else if ("key" in entry) {
+      if (!parent) {
+        throw new Error("Invalid parent object");
+      }
+      (parent as Record<string, unknown>)[entry.key] = value;
+    }
+  }
+
+  if (stack.length !== 1) {
+    console.warn("Failed to resolve single value", stack);
+  }
+
+  return stack[0];
 }

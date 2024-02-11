@@ -3,8 +3,7 @@ import clsx from "clsx";
 
 import { ChevronDown } from "@/components/icons/ChevronDown";
 import {
-  ConcreteLineInfo,
-  parseInspectRepresentation,
+  ParsedLineInfo,
   renderCollapsed,
   renderLine,
 } from "@/utils/inspectParser";
@@ -12,11 +11,9 @@ import {
 const MAX_INITIAL_LINES = 10;
 
 type Props = {
-  value: string;
+  lineInfo: ParsedLineInfo[];
 };
-export function StructuredValue({ value }: Props) {
-  const lineInfo = useMemo(() => parseInspectRepresentation(value), [value]);
-
+export function StructuredValue({ lineInfo }: Props) {
   const maxDepth = useMemo(
     () =>
       lineInfo.reduce((max, { indent }) => Math.max(max, indent.length / 2), 0),
@@ -117,7 +114,7 @@ const rangeWidth = (maxDepth: number) =>
     "w-90": maxDepth === 9,
   });
 
-function collapseAt(lineInfo: ConcreteLineInfo[], depth: number) {
+function collapseAt(lineInfo: ParsedLineInfo[], depth: number) {
   const set = new Set<number>();
 
   for (const [index, entry] of lineInfo.entries()) {
