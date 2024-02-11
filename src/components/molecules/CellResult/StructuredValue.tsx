@@ -2,9 +2,12 @@ import { useMemo, useState } from "react";
 import clsx from "clsx";
 
 import { ChevronDown } from "@/components/icons/ChevronDown";
-
-import { LineInfo, parseFoldingRegions } from "./folding";
-import { ColorMap, syntaxHighlight } from "./highlight";
+import {
+  ConcreteLineInfo,
+  parseInspectRepresentation,
+  renderCollapsed,
+  renderLine,
+} from "@/utils/inspectParser";
 
 const MAX_INITIAL_LINES = 10;
 
@@ -12,28 +15,29 @@ type Props = {
   value: string;
 };
 export function StructuredValue({ value }: Props) {
-  const info = useMemo(() => parseFoldingRegions(value.split("\n")), [value]);
+  const lineInfo = useMemo(() => parseInspectRepresentation(value), [value]);
 
   const maxDepth = useMemo(
-    () => info.reduce((max, { depth }) => Math.max(max, depth), 0),
-    [info]
+    () =>
+      lineInfo.reduce((max, { indent }) => Math.max(max, indent.length / 2), 0),
+    [lineInfo]
   );
   const [foldDepth, setFoldDepth] = useState(() =>
-    info.length >= MAX_INITIAL_LINES ? Math.max(1, maxDepth - 1) : 0
+    lineInfo.length >= MAX_INITIAL_LINES ? Math.max(1, maxDepth - 1) : 0
   );
   const [collapsed, setCollapsed] = useState<Set<number>>(() => {
     if (foldDepth > 0) {
-      return collapseAt(info, maxDepth - foldDepth);
+      return collapseAt(lineInfo, maxDepth - foldDepth);
     }
     return new Set();
   });
 
-  const toggle = (index: number, info: LineInfo) => {
+  const toggle = (pos: number) => {
     const update = new Set(collapsed);
-    if (collapsed.has(index)) {
-      update.delete(index);
+    if (collapsed.has(pos)) {
+      update.delete(pos);
     } else {
-      update.add(index);
+      update.add(pos);
     }
     setCollapsed(update);
     setFoldDepth(0);
@@ -42,7 +46,7 @@ export function StructuredValue({ value }: Props) {
   let skipUntil: number | undefined = undefined;
   return (
     <div className="overflow-x-hidden">
-      {(maxDepth > 1 || info.length >= MAX_INITIAL_LINES) && (
+      {(maxDepth > 1 || lineInfo.length >= MAX_INITIAL_LINES) && (
         <div className={rangeWidth(maxDepth)}>
           <input
             type="range"
@@ -52,31 +56,31 @@ export function StructuredValue({ value }: Props) {
             className="range range-primary range-xs max-w-xl"
             onChange={(e) => {
               const depth = parseInt(e.target.value, 10);
-              setCollapsed(collapseAt(info, maxDepth - depth));
+              setCollapsed(collapseAt(lineInfo, maxDepth - depth));
               setFoldDepth(depth);
             }}
           />
         </div>
       )}
       <div className="overflow-x-auto">
-        {info.map((entry, index) => {
-          if (skipUntil !== undefined && index <= skipUntil) {
+        {lineInfo.map((entry, index) => {
+          if (skipUntil !== undefined && index < skipUntil) {
             return null;
           }
           skipUntil = undefined;
 
-          const isCollapsed = collapsed.has(index);
+          const isCollapsed = "pair" in entry && collapsed.has(index);
           if (isCollapsed) {
-            skipUntil = entry.pair;
+            skipUntil = entry.pair + 1;
           }
 
           return (
             <div key={index} className="flex items-center">
               <span className="w-6">
-                {entry.pair !== undefined && entry.pair > index && (
+                {"pair" in entry && entry.pair > index && (
                   <span
                     className="text-gray-500 hover:text-gray-200 cursor-pointer"
-                    onClick={() => toggle(index, entry)}
+                    onClick={() => toggle(index)}
                   >
                     <ChevronDown
                       className={clsx("!w-4 transition-transform", {
@@ -87,13 +91,9 @@ export function StructuredValue({ value }: Props) {
                 )}
               </span>
               <pre>
-                {syntaxHighlight(entry.line)}
-                {isCollapsed && (
-                  <>
-                    <span className={ColorMap.String}> ... </span>
-                    {syntaxHighlight(info[entry.pair!].line.trimStart())}
-                  </>
-                )}
+                {isCollapsed
+                  ? renderCollapsed(lineInfo, index)
+                  : renderLine(entry)}
               </pre>
             </div>
           );
@@ -117,11 +117,15 @@ const rangeWidth = (maxDepth: number) =>
     "w-90": maxDepth === 9,
   });
 
-function collapseAt(info: LineInfo[], depth: number) {
+function collapseAt(lineInfo: ConcreteLineInfo[], depth: number) {
   const set = new Set<number>();
 
-  for (const [index, entry] of info.entries()) {
-    if (depth === entry.depth && (entry.pair ?? 0) > index) {
+  for (const [index, entry] of lineInfo.entries()) {
+    if (
+      "pair" in entry &&
+      entry.pair > index &&
+      entry.indent.length === depth * 2
+    ) {
       set.add(index);
     }
   }
