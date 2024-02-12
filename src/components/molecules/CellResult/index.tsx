@@ -15,6 +15,7 @@ import { formatDuration } from "@/utils/format";
 import { ErrorDetails } from "./ErrorDetails";
 import { Exports } from "./Exports";
 import { Logs } from "./Logs";
+import { Visualizations } from "./Visualizations";
 
 export type CellExecutionResults = ExecutionMetaInfo & (ExecutionResult | {});
 
@@ -112,18 +113,36 @@ export function CellResult(props: Props) {
           name={result.executionId}
           role="tab"
           className={clsx("tab", {
+            invisible: !(
+              "success" in result &&
+              Object.keys(result.success.serializedExports).length > 0
+            ),
+          })}
+          aria-label="Visualizations"
+        />
+        <div
+          role="tabpanel"
+          className="tab-content bg-base-100 border-base-300 rounded p-2"
+        >
+          {"success" in result && (
+            <Visualizations
+              serializedExports={result.success.serializedExports}
+            />
+          )}
+        </div>
+
+        <input
+          type="radio"
+          name={result.executionId}
+          role="tab"
+          className={clsx("tab", {
             invisible: !("logs" in result && result.logs?.length),
           })}
           aria-label="Logs"
         />
         <div
           role="tabpanel"
-          className={clsx(
-            "tab-content bg-base-100 border-base-300 rounded p-2",
-            {
-              invisible: !("logs" in result && result.logs?.length),
-            }
-          )}
+          className="tab-content bg-base-100 border-base-300 rounded p-2"
         >
           {"logs" in result && result.logs && (
             <Logs
