@@ -26,7 +26,7 @@ const q = new Queue({
 });
 
 function enqueue(path: string) {
-  console.info(`Enqueuing job: ${path}`);
+  console.info(`Queuing job: ${path}`);
   if (path.endsWith("package.json")) {
     q.push(installDependencies.bind(null, path));
   } else {
@@ -37,12 +37,15 @@ function enqueue(path: string) {
 chokidar
   .watch(`${argv["watch-path"]}/**/raw.ts`, {
     ignoreInitial: true,
+    ignored: /node_modules/,
   })
   .on("add", enqueue)
   .on("change", enqueue);
 
 chokidar
-  .watch(`${argv["watch-path"]}/package.json`)
+  .watch(`${argv["watch-path"]}/package.json`, {
+    ignored: /node_modules/,
+  })
   .on("add", enqueue)
   .on("change", enqueue);
 

@@ -73,6 +73,10 @@ export async function performExecution(filename: string) {
     meta.exportKeys = Object.keys(exports);
     await writeFile(metaPath, superjson.stringify(meta));
 
+    console.info(
+      `Execution success: ${filename} (${meta.exportKeys.join(", ")})`
+    );
+
     for (const [key, value] of Object.entries(exports)) {
       if (value instanceof Promise) {
         capturePromise(executionPath, key, evaluationStart, value);
@@ -85,6 +89,12 @@ export async function performExecution(filename: string) {
         ...formatError(error),
       },
     });
+
+    console.info(
+      `Execution failed: ${filename} (${
+        error instanceof Error ? error.message : String(error)
+      })`
+    );
   }
 }
 

@@ -124,11 +124,12 @@ export function CellResult(props: Props) {
           role="tabpanel"
           className="tab-content bg-base-100 border-base-300 rounded p-2"
         >
-          {"success" in result && (
-            <Visualizations
-              serializedExports={result.success.serializedExports}
-            />
-          )}
+          {"success" in result &&
+            Object.keys(result.success.serializedExports).length > 0 && (
+              <Visualizations
+                serializedExports={result.success.serializedExports}
+              />
+            )}
         </div>
 
         <input

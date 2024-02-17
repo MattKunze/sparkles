@@ -2,8 +2,10 @@ FROM node:lts
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install
+RUN npm install -g bun
+
+COPY package.json .
+RUN bun install
 
 COPY  next.config.js \
   postcss.config.js \
