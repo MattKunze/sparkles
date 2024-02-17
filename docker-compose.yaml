@@ -7,7 +7,7 @@ volumes:
 services:
   # would be nice to split web/wss services
   node:
-    image: repl-notebook:app
+    image: sparkles:app
     build:
       context: .
       dockerfile: Dockerfile
@@ -18,7 +18,7 @@ services:
     env_file: .env
     environment:
       WORKSPACE_ROOT: /app/workspace
-      WORKSPACE_DOCKER_VOLUME: repl-notebook_workspace
+      WORKSPACE_DOCKER_VOLUME: sparkles_workspace
       SURREALDB_ENDPOINT: http://surrealdb:8000/rpc
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

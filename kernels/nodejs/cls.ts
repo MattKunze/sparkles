@@ -1,6 +1,6 @@
 import cls from "cls-hooked";
 
-const clsStore = cls.createNamespace("repl-notebook");
+const clsStore = cls.createNamespace("sparkles");
 
 export function getCurrentExecutionId() {
   return clsStore.get("executionId");

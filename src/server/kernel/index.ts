@@ -17,12 +17,12 @@ export const UPDATE_EVENT = "update";
 export const eventEmitter = new EventEmitter();
 
 const docker = new Docker();
-const DockerImage = "repl-notebook:kernel-nodejs";
+const DockerImage = "sparkles:kernel-nodejs";
 
 enum ContainerLabels {
-  DOCUMENT = "repl-notebook.document",
-  IMAGE = "repl-notebook.kernel",
-  OWNER = "repl-notebook.owner",
+  DOCUMENT = "sparkles.document",
+  IMAGE = "sparkles.kernel",
+  OWNER = "sparkles.owner",
 }
 
 export function initialize() {

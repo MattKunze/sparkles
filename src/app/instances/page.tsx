@@ -35,7 +35,7 @@ export default function InstancesPage() {
             </td>
             <td>
               {Object.entries(instance.Labels)
-                .filter(([key]) => key.startsWith("repl-notebook"))
+                .filter(([key]) => key.startsWith("sparkles."))
                 .map(([key, value]) => (
                   <span key={key} className="badge badge-ghost">
                     {key.split(".")[1]}:{value}
