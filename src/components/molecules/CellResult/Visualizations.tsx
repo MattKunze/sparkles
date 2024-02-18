@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { ChevronDown } from "@/components/icons/ChevronDown";
+import { ErrorBoundary } from "@/components/molecules/ErrorBoundary";
 import { ChartStyle, NivoCharts } from "@/components/molecules/NivoCharts";
 import { parseInspectRepresentation, toJSON } from "@/utils/inspectParser";
 
@@ -61,7 +62,9 @@ export function Visualizations(props: Props) {
         ))}
       </ul>
       {Array.isArray(json) ? (
-        <NivoCharts style={chartStyle} data={json} />
+        <ErrorBoundary>
+          <NivoCharts style={chartStyle} data={json} />
+        </ErrorBoundary>
       ) : (
         "unsupported data"
       )}

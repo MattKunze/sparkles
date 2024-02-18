@@ -193,13 +193,13 @@ function renderKey(key: PropertyLineInfo["key"]): React.ReactNode {
   if (key.startsWith("[Symbol")) {
     return [
       "[",
-      <span key="_" className={ColorMap["symbol"]}>
+      <span key="k" className={ColorMap["symbol"]}>
         {key.slice(1, -1)}
       </span>,
       "]: ",
     ];
   } else {
-    return <span>{key}: </span>;
+    return <span key="k">{key}: </span>;
   }
 }
 
@@ -207,7 +207,7 @@ function renderDeferred(status: DeferredLineInfo["status"]): React.ReactNode {
   return [
     "<",
     <span
-      key="_"
+      key="d"
       className={clsx({
         "text-pink-500": status === "pending",
         "text-green-500": status.startsWith("resolved"),
@@ -224,16 +224,20 @@ function renderValue(type: LineValueType, value: string): React.ReactNode {
   if (type === "object-start") {
     return value.length > 2 ? (
       [
-        <span key="_" className={ColorMap[type]}>
+        <span key={`v_${type}`} className={ColorMap[type]}>
           {value.slice(0, -2)}
         </span>,
         " {",
       ]
     ) : (
-      <span>{value}</span>
+      <span key={`v_${type}`}>{value}</span>
     );
   } else {
-    return <span className={ColorMap[type]}>{value}</span>;
+    return (
+      <span key={`v_${type}`} className={ColorMap[type]}>
+        {value}
+      </span>
+    );
   }
 }
 
@@ -245,7 +249,7 @@ export function renderCollapsed(
   const end = lineInfo[start.pair];
   return [
     ...renderLine(start),
-    <span key="collapsed" className="px-1 text-gray-500">
+    <span key="c" className="px-1 text-gray-500">
       ...
     </span>,
     ...renderLine({ ...end, indent: "" }),
