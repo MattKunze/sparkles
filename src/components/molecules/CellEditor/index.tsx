@@ -79,7 +79,7 @@ export function CellEditor(props: Props) {
           path={props.cell.id}
           height={`${(lineCount + 1) * 18}px`}
           language={props.cell.language}
-          value={props.cell.content}
+          defaultValue={props.cell.content}
           options={DefaultEditorOptions}
           onChange={(text) => {
             setContent(text);
