@@ -1,3 +1,4 @@
+import { useState } from "react";
 import clsx from "clsx";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 
@@ -19,11 +20,14 @@ import { Visualizations } from "./Visualizations";
 
 export type CellExecutionResults = ExecutionMetaInfo & (ExecutionResult | {});
 
+const Tabs = ["results", "visualizations", "logs"] as const;
+
 type Props = {
   result: CellExecutionResults;
   isStale: boolean;
 };
 export function CellResult(props: Props) {
+  const [activeTab, setActiveTab] = useState<(typeof Tabs)[number]>("results");
   const { result } = props;
 
   const { showToast } = useToastContext();
@@ -39,6 +43,11 @@ export function CellResult(props: Props) {
       : "error" in result
         ? result.error.duration
         : undefined;
+
+  const showVisualizations =
+    "success" in result &&
+    Object.keys(result.success.serializedExports).length > 0;
+  const showLogs = "logs" in result && result.logs?.length;
 
   return (
     <div className="flex flex-row group">
@@ -62,7 +71,8 @@ export function CellResult(props: Props) {
           )}
         </button>
       </div>
-      <div role="tablist" className="tabs tabs-lifted w-full relative">
+
+      <div className="grid w-full relative">
         <div className="badge badge-ghost absolute top-1 right-0 ">
           ...{result.executionId.slice(-7)}
           <a
@@ -79,19 +89,59 @@ export function CellResult(props: Props) {
             <SquareStack className="pl-1" />
           </a>
         </div>
-        <input
-          type="radio"
-          name={result.executionId}
-          role="tab"
-          className="tab ml-5 whitespace-nowrap"
-          aria-label={resultsLabel({ queueDuration, executeDuration })}
-          defaultChecked
-        />
+
         <div
-          role="tabpanel"
-          className="tab-content bg-base-100 border-base-300 rounded p-2"
+          role="tablist"
+          className="tabs tabs-lifted -mb-[var(--tab-border)] justify-self-start"
         >
-          {"success" in result ? (
+          <a
+            role="tab"
+            className={clsx("tab ml-5", {
+              "tab-active": activeTab === "results",
+            })}
+            onClick={() => setActiveTab("results")}
+          >
+            {resultsLabel({ queueDuration, executeDuration })}
+          </a>
+          {showVisualizations && (
+            <a
+              role="tab"
+              className={clsx("tab", {
+                "tab-active": activeTab === "visualizations",
+              })}
+              onClick={() => setActiveTab("visualizations")}
+            >
+              Visualizations
+            </a>
+          )}
+          {showLogs && (
+            <a
+              role="tab"
+              className={clsx("tab", {
+                "tab-active": activeTab === "logs",
+              })}
+              onClick={() => setActiveTab("logs")}
+            >
+              Logs
+              <span
+                className={clsx("badge badge-ghost ml-1", {
+                  "!badge-warning": result.logs.some(
+                    (log) => log.level === "WARN"
+                  ),
+                  "!badge-error": result.logs.some(
+                    (log) => log.level === "ERROR"
+                  ),
+                })}
+              >
+                {result.logs.length}
+              </span>
+            </a>
+          )}
+          <div className="tab [--tab-border-color:transparent]"></div>
+        </div>
+
+        <div role="tabpanel" className="bg-base-100 border rounded p-2">
+          {activeTab === "results" && "success" in result ? (
             <Exports
               serializedExports={result.success.serializedExports}
               deferred={
@@ -100,57 +150,21 @@ export function CellResult(props: Props) {
                   : undefined
               }
             />
-          ) : "error" in result ? (
+          ) : activeTab === "results" && "error" in result ? (
             <ErrorDetails
               error={result.error.data}
               stack={result.error.stack}
             />
-          ) : null}
-        </div>
-
-        <input
-          type="radio"
-          name={result.executionId}
-          role="tab"
-          className={clsx("tab", {
-            invisible: !(
-              "success" in result &&
-              Object.keys(result.success.serializedExports).length > 0
-            ),
-          })}
-          aria-label="Visualizations"
-        />
-        <div
-          role="tabpanel"
-          className="tab-content bg-base-100 border-base-300 rounded p-2"
-        >
-          {"success" in result &&
-            Object.keys(result.success.serializedExports).length > 0 && (
-              <Visualizations
-                serializedExports={result.success.serializedExports}
-              />
-            )}
-        </div>
-
-        <input
-          type="radio"
-          name={result.executionId}
-          role="tab"
-          className={clsx("tab", {
-            invisible: !("logs" in result && result.logs?.length),
-          })}
-          aria-label="Logs"
-        />
-        <div
-          role="tabpanel"
-          className="tab-content bg-base-100 border-base-300 rounded p-2"
-        >
-          {"logs" in result && result.logs && (
+          ) : activeTab === "visualizations" && showVisualizations ? (
+            <Visualizations
+              serializedExports={result.success.serializedExports}
+            />
+          ) : activeTab === "logs" && showLogs ? (
             <Logs
               executionStart={result.executeTimestamp ?? result.createTimestamp}
               logs={result.logs}
             />
-          )}
+          ) : null}
         </div>
       </div>
     </div>
