@@ -3,6 +3,7 @@ import Docker from "dockerode";
 import { EventEmitter } from "events";
 import fs from "fs/promises";
 import path from "path";
+import { rimraf } from "rimraf";
 import superjson from "superjson";
 import { ulid } from "ulid";
 
@@ -153,6 +154,36 @@ export async function emitCurrentResults(ctx: Context, documentId: string) {
       }
     });
   });
+}
+
+export async function clearResults(
+  _ctx: Context,
+  documentId: string,
+  cellId: string
+) {
+  // TODO - check authorization
+  const documentPath = resolveWorkspacePath(documentId);
+  try {
+    await fs.stat(documentPath);
+  } catch {
+    return;
+  }
+  const files = await fs.readdir(documentPath, { withFileTypes: true });
+  const executionIds = files
+    .filter((file) => file.isDirectory() && file.name !== "node_modules")
+    .map((file) => file.name)
+    .sort();
+  for (const executionId of executionIds) {
+    const meta = superjson.parse(
+      await fs.readFile(
+        path.resolve(documentPath, executionId, "meta.json"),
+        "utf-8"
+      )
+    ) as ExecutionMetaInfo;
+    if (meta.cellId === cellId) {
+      await rimraf(path.resolve(documentPath, executionId));
+    }
+  }
 }
 
 export async function enqueueExecution(

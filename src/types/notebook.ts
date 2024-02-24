@@ -2,10 +2,12 @@ import Chance from "chance";
 import { ulid } from "ulid";
 import { DeepReadonly } from "ts-essentials";
 
+export const CellLanguages = ["markdown", "typescript"] as const;
+
 export type NotebookCell = DeepReadonly<{
   id: string;
   timestamp: Date;
-  language: "markdown" | "typescript";
+  language: (typeof CellLanguages)[number];
   content: string;
 }>;
 
@@ -19,11 +21,6 @@ export type NotebookDocument = DeepReadonly<{
   environmentId?: string;
 }>;
 
-const defaultContent = {
-  markdown: "# Add some details",
-  typescript: "// let's go",
-} as const;
-
 export function createEmptyCell({
   language = "markdown",
 }: {
@@ -33,7 +30,7 @@ export function createEmptyCell({
     id: ulid(),
     timestamp: new Date(),
     language,
-    content: defaultContent[language],
+    content: "",
   };
 }
 

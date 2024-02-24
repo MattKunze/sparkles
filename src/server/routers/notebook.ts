@@ -6,9 +6,9 @@ import {
   getNotebookDocument,
   mutateNotebookDocument,
 } from "@/server/db";
-import { deleteContainer, findContainer } from "@/server/kernel";
+import { clearResults, deleteContainer, findContainer } from "@/server/kernel";
 import { procedure, router } from "@/server/trpc";
-import { createEmptyCell } from "@/types";
+import { CellLanguages, createEmptyCell } from "@/types";
 
 const DocumentRef = z.object({
   documentId: z.string(),
@@ -76,7 +76,7 @@ export const notebookRouter = router({
     .input(
       DocumentRef.extend({
         afterId: z.string().optional(),
-        language: z.enum(["markdown", "typescript"]).default("typescript"),
+        language: z.enum(CellLanguages).default("markdown"),
       })
     )
     .mutation((opts) =>
@@ -95,6 +95,7 @@ export const notebookRouter = router({
     .input(
       DocumentRef.extend({
         cellId: z.string(),
+        language: z.enum(CellLanguages).optional(),
         content: z.string(),
       })
     )
@@ -107,6 +108,10 @@ export const notebookRouter = router({
           const pos = draft.cells.findIndex((c) => c.id === opts.input.cellId);
           if (pos < 0) {
             throw new Error("Cell not found");
+          }
+          if (opts.input.language) {
+            draft.cells[pos].language = opts.input.language;
+            clearResults(opts.ctx, opts.input.documentId, opts.input.cellId);
           }
           draft.cells[pos].content = opts.input.content;
           draft.cells[pos].timestamp = new Date();

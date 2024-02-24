@@ -1,6 +1,7 @@
 "use client";
 import { DndContext } from "@dnd-kit/core";
 import { useEffect, useState } from "react";
+import { omit } from "lodash";
 
 import {
   CellExecutionResults,
@@ -136,19 +137,25 @@ export function NotebookEditor(props: Props) {
                 cellId: cell.id,
               })
             }
-            onUpdate={(content) =>
+            onUpdate={(content, language) => {
               updateCell.mutate({
                 documentId: document.id,
                 documentTimestamp: document.timestamp,
                 cellId: cell.id,
+                language,
                 content,
-              })
-            }
+              });
+              // clear results if language changes
+              if (language) {
+                setExecutionResults(omit(executionResults, cell.id));
+              }
+            }}
             onAddBelow={() =>
               addCell.mutate({
                 documentId: document.id,
                 documentTimestamp: document.timestamp,
                 afterId: cell.id,
+                language: cell.language,
               })
             }
             onDelete={() =>

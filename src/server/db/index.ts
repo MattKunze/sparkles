@@ -50,7 +50,7 @@ export async function getDocumentInfo(
       variables: { owner: ctx.session.user.email },
     }
   );
-  return sortBy(results, "name");
+  return sortBy(results, (t) => t.name.toLocaleLowerCase());
 }
 
 export async function getNotebookDocument(

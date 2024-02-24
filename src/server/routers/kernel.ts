@@ -42,7 +42,9 @@ export const kernelRouter = router({
       if (pos < 0) {
         throw new Error("Cell not found");
       }
-      const linkedCells = document.cells.slice(0, pos);
+      const linkedCells = document.cells
+        .slice(0, pos)
+        .filter((t) => t.language === document.cells[pos].language);
       const linkedExecutionIds = await linkedCells.reduce(
         async (prev, cell) => {
           const acc = await prev;

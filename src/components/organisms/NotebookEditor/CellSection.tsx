@@ -19,7 +19,7 @@ type Props = {
   cellHighlight: CellHighlight;
   setCellHighlight: (highlight: CellHighlight) => void;
   onEvaluate: () => void;
-  onUpdate: (content: string) => void;
+  onUpdate: (content: string, language?: NotebookCell["language"]) => void;
   onAddBelow: () => void;
   onDelete: () => void;
 };

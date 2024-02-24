@@ -1,10 +1,12 @@
 "use client";
 import { useDebounce } from "@uidotdev/usehooks";
-import Editor, { MonacoDiffEditor } from "@monaco-editor/react";
+import Editor, { Monaco } from "@monaco-editor/react";
 import { useEffect, useRef, useState } from "react";
 
 import { Play } from "@/components/icons/Play";
 import { NotebookCell } from "@/types";
+
+import { LanguageDropdown } from "./LanguageDropdown";
 
 const DefaultEditorOptions = {
   lineNumbers: "off",
@@ -18,19 +20,14 @@ const DefaultEditorOptions = {
   },
 };
 
-const LanguageExtensions: Record<NotebookCell["language"], string> = {
-  markdown: ".md",
-  typescript: ".ts",
-};
-
 type Props = {
   cell: NotebookCell;
   onEvaluate: () => void;
-  onUpdate: (content: string) => void;
+  onUpdate: (content: string, language?: NotebookCell["language"]) => void;
 };
 export function CellEditor(props: Props) {
   const { cell } = props;
-  const editorRef = useRef<MonacoDiffEditor>(null);
+  const editorRef = useRef<Monaco>(null);
   const disposeRefs = useRef<Array<{ dispose: () => void }>>([]);
   const [lineCount, setLineCount] = useState<number>(0);
   const [content, setContent] = useState<string | undefined>(cell.content);
@@ -63,9 +60,13 @@ export function CellEditor(props: Props) {
   return (
     <div className="flex flex-row group">
       <div className="flex flex-col mr-1">
-        <span className="badge badge-accent px-0 w-full">
-          {LanguageExtensions[cell.language]}
-        </span>
+        <LanguageDropdown
+          language={cell.language}
+          onChange={(language) => {
+            onUpdate("", language);
+            setContent("");
+          }}
+        />
         <button
           className="btn btn-sm btn-ghost mt-2 px-1"
           disabled={cell.language === "markdown"}
@@ -79,7 +80,7 @@ export function CellEditor(props: Props) {
           path={props.cell.id}
           height={`${(lineCount + 1) * 18}px`}
           language={props.cell.language}
-          defaultValue={props.cell.content}
+          value={content}
           options={DefaultEditorOptions}
           onChange={(text) => {
             setContent(text);
