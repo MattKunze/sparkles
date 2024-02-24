@@ -4,22 +4,27 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useNavigation } from "@/components/hooks/useNavigation";
 import { PlusCircle } from "@/components/icons/PlusCircle";
 import SearchInput from "@/components/molecules/SearchInput";
 import { randomDocumentId } from "@/types";
 import { trpc } from "@/utils/trpcClient";
 
+import { usePinnedFilters } from "./usePinnedFilters";
 import { TagsPopup } from "./TagsPopup";
 
 export default function DocumentList() {
   const pathname = usePathname();
   const router = useRouter();
+  const { resolvePath } = useNavigation();
   const documents = trpc.notebook.list.useQuery();
-  const [filter, setFilter] = useState<string[]>([]);
+  const [filter, setFilter] = useState<string>("");
+  const [pinned, setPinned] = usePinnedFilters();
 
+  const filters = filter ? pinned.concat(filter) : pinned;
   let filteredDocuments = documents.data
     ? documents.data.filter((doc) =>
-        filter.every(
+        filters.every(
           (f) =>
             includesLowerCase(doc.name, f) ||
             doc.tags?.some((tag) => includesLowerCase(tag, f))
@@ -29,14 +34,18 @@ export default function DocumentList() {
 
   return (
     <div className="flex flex-col grow overflow-hidden">
-      <SearchInput onSearch={setFilter} />
+      <SearchInput
+        pinned={pinned}
+        onSearch={setFilter}
+        updatePinned={setPinned}
+      />
       <div className="shrink overflow-y-auto">
         <ul className="menu w-72 rounded-box">
           {filteredDocuments?.length ? (
             filteredDocuments.map((info) => (
               <li key={info.id}>
                 <Link
-                  href={`/editor/${encodeURIComponent(info.id)}`}
+                  href={resolvePath(`/editor/${encodeURIComponent(info.id)}`)}
                   className={clsx("flex justify-between", {
                     active:
                       pathname &&
@@ -68,7 +77,9 @@ export default function DocumentList() {
             className="btn btn-sm btn-outline"
             href="#"
             onClick={() => {
-              router.push(`/editor/${encodeURIComponent(randomDocumentId())}`);
+              router.push(
+                resolvePath(`/editor/${encodeURIComponent(randomDocumentId())}`)
+              );
             }}
           >
             <PlusCircle />

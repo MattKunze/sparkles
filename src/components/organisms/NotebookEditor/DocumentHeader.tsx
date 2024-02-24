@@ -3,6 +3,7 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { useNavigation } from "@/components/hooks/useNavigation";
 import { Trash } from "@/components/icons/Trash";
 import { EnvironmentDropdown } from "@/components/molecules/EnvironmentDropdown";
 import { TagsEditor } from "@/components/molecules/TagsEditor";
@@ -20,6 +21,7 @@ export function DocumentHeader(props: Props) {
   const { document } = props;
   const utils = trpc.useContext();
   const router = useRouter();
+  const { resolvePath } = useNavigation();
   const [name, setName] = useState(document.name);
   const debouncedName = useDebounce(name, 500);
 
@@ -56,7 +58,7 @@ export function DocumentHeader(props: Props) {
       // rename the document in the cache and the current route
       const newName = data.name;
       utils.notebook.get.setData({ nameOrId: newName }, data);
-      router.replace(`/editor/${encodeURIComponent(newName)}`);
+      router.replace(resolvePath(`/editor/${encodeURIComponent(newName)}`));
       // also update the list of available documents
       utils.notebook.list.invalidate();
       props.onDocumentUpdate(data);
@@ -64,7 +66,7 @@ export function DocumentHeader(props: Props) {
   });
   const deleteDocument = trpc.notebook.delete.useMutation({
     onMutate: () => {
-      router.push("/");
+      router.push(resolvePath("/"));
     },
     onSuccess: () => {
       utils.notebook.list.invalidate();

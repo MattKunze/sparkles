@@ -8,19 +8,25 @@ import { XMark } from "@/components/icons/XMark";
 import { PinnedFilters } from "./PinnedFilters";
 
 type Props = {
+  pinned: string[];
   interval?: number;
-  onSearch: (search: string[]) => void;
+  onSearch: (search: string) => void;
+  updatePinned: (pinned: string[]) => void;
 };
 
-export default function SearchInput({ interval = 100, onSearch }: Props) {
+export default function SearchInput({
+  pinned,
+  interval = 100,
+  onSearch,
+  updatePinned,
+}: Props) {
   const [search, setSearch] = useState("");
-  const [pinned, setPinned] = useState<string[]>([]);
 
   const debouncedSearch = useDebounce(search, interval);
 
   useEffect(() => {
-    onSearch(pinned.concat(debouncedSearch));
-  }, [debouncedSearch, pinned, onSearch]);
+    onSearch(debouncedSearch);
+  }, [debouncedSearch, onSearch]);
 
   return (
     <div className="">
@@ -34,8 +40,8 @@ export default function SearchInput({ interval = 100, onSearch }: Props) {
           onChange={(e) => setSearch(e.target.value)}
           onKeyUp={(e) => {
             if (e.key === "Enter") {
-              setPinned([...pinned, search]);
               setSearch("");
+              updatePinned([...pinned, search]);
             }
           }}
         />
@@ -51,7 +57,9 @@ export default function SearchInput({ interval = 100, onSearch }: Props) {
       {pinned.length > 0 && (
         <PinnedFilters
           pinned={pinned}
-          onRemove={(filter) => setPinned(pinned.filter((p) => p !== filter))}
+          onRemove={(filter) =>
+            updatePinned(pinned.filter((p) => p !== filter))
+          }
         />
       )}
     </div>
