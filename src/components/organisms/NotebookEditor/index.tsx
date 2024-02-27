@@ -109,7 +109,7 @@ export function NotebookEditor(props: Props) {
           })
         }
       />
-      <div className="flex flex-col gap-2 px-2">
+      <div className="flex flex-col gap-2">
         <div>
           <DocumentHeader document={document} onDocumentUpdate={setDocument} />
           <TopPlaceholder

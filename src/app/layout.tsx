@@ -2,6 +2,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
+import { Drawer } from "@/components/molecules/Drawer";
+
 import ClientProviders from "./ClientProviders";
 import Sidebar from "./Sidebar";
 
@@ -21,13 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ClientProviders>
-          <div className="drawer drawer-open">
-            <input type="checkbox" className="drawer-toggle" />
-            <div className="drawer-content">{children}</div>
-            <div className="drawer-side">
-              <Sidebar />
-            </div>
-          </div>
+          <Drawer sideContent={<Sidebar />}>{children}</Drawer>
         </ClientProviders>
       </body>
     </html>

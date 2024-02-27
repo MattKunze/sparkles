@@ -23,13 +23,9 @@ export default function Page({ params }: { params: { slug: string } }) {
     }
   }, [document.status, document.data?.name, pathname, router, resolvePath]);
 
-  return (
-    <div className="container mx-auto">
-      {document.data ? (
-        <NotebookEditor document={document.data} />
-      ) : (
-        <div>Loading...</div>
-      )}
-    </div>
+  return document.data ? (
+    <NotebookEditor document={document.data} />
+  ) : (
+    <div>Loading...</div>
   );
 }
