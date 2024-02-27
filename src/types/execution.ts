@@ -1,8 +1,11 @@
+import { NotebookCell } from "./notebook";
+
 export type ExecutionMetaInfo = {
   executionId: string;
   linkedExecutionIds?: string[];
   documentId: string;
   cellId: string;
+  language: NotebookCell["language"];
   createTimestamp: Date;
   executeTimestamp?: Date;
   exportKeys?: string[];

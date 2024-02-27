@@ -1,6 +1,7 @@
 import { CellLanguages, NotebookCell } from "@/types";
 
 const LanguageExtensions: Record<NotebookCell["language"], string> = {
+  chat: ".ai",
   markdown: ".md",
   typescript: ".ts",
 };

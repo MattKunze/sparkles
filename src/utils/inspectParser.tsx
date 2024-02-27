@@ -256,8 +256,8 @@ export function renderCollapsed(
   ];
 }
 
-export function toJSON(info: ParsedLineInfo[]): unknown {
-  const stack: unknown[] = [];
+export function toJSON<T = unknown>(info: ParsedLineInfo[]): T {
+  const stack: T[] = [];
 
   for (const [_, entry] of info.entries()) {
     let value: unknown;
@@ -307,7 +307,7 @@ export function toJSON(info: ParsedLineInfo[]): unknown {
 
     const parent = stack[stack.length - 1];
     if (!parent || pushStack) {
-      stack.push(value);
+      stack.push(value as T);
     }
     if (Array.isArray(parent)) {
       parent.push(value);

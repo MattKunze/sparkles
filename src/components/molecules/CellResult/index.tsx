@@ -13,6 +13,7 @@ import {
 } from "@/types";
 import { formatDuration } from "@/utils/format";
 
+import { ChatResponse } from "./ChatResponse";
 import { ErrorDetails } from "./ErrorDetails";
 import { Exports } from "./Exports";
 import { Logs } from "./Logs";
@@ -46,6 +47,7 @@ export function CellResult(props: Props) {
 
   const showVisualizations =
     "success" in result &&
+    result.language === "typescript" &&
     Object.keys(result.success.serializedExports).length > 0;
   const showLogs = "logs" in result && result.logs?.length;
 
@@ -141,7 +143,13 @@ export function CellResult(props: Props) {
         </div>
 
         <div role="tabpanel" className="bg-base-100 border rounded p-2">
-          {activeTab === "results" && "success" in result ? (
+          {activeTab === "results" &&
+          "success" in result &&
+          result.language === "chat" ? (
+            <ChatResponse
+              response={result.success.serializedExports.response}
+            />
+          ) : activeTab === "results" && "success" in result ? (
             <Exports
               serializedExports={result.success.serializedExports}
               deferred={

@@ -20,6 +20,12 @@ const DefaultEditorOptions = {
   },
 };
 
+const EditorLanguages: Record<NotebookCell["language"], string> = {
+  chat: "text",
+  markdown: "markdown",
+  typescript: "typescript",
+};
+
 type Props = {
   cell: NotebookCell;
   onEvaluate: () => void;
@@ -79,7 +85,7 @@ export function CellEditor(props: Props) {
         <Editor
           path={props.cell.id}
           height={`${(lineCount + 1) * 18}px`}
-          language={props.cell.language}
+          language={EditorLanguages[props.cell.language]}
           value={content}
           options={DefaultEditorOptions}
           onChange={(text) => {

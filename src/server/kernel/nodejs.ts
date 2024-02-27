@@ -1,14 +1,21 @@
-import { stat, readFile, writeFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import path from "path";
 
 import { parsers } from "prettier/plugins/typescript";
 
-import { Environment, NotebookDocument } from "@/types";
+import { NotebookCell, NotebookDocument } from "@/types";
 
-export async function updatePackageJson(
+export async function enqueueExecution(
   basePath: string,
-  document: NotebookDocument
+  executionId: string,
+  document: NotebookDocument,
+  cell: NotebookCell
 ) {
+  await updatePackageJson(basePath, document);
+  await writeFile(path.resolve(basePath, executionId, "raw.ts"), cell.content);
+}
+
+async function updatePackageJson(basePath: string, document: NotebookDocument) {
   const dependencies = extractDependencies(document);
 
   const content = JSON.stringify(
@@ -37,20 +44,6 @@ export async function updatePackageJson(
     }
   } catch {}
 
-  await writeFile(filename, content);
-}
-
-export async function updateEnvironment(
-  basePath: string,
-  environment: Environment | null
-) {
-  const content = environment?.variables
-    ? Object.entries(environment.variables)
-        .map(([key, value]) => `${key}=${value.value}`)
-        .join("\n")
-    : "";
-
-  const filename = path.resolve(basePath, ".env");
   await writeFile(filename, content);
 }
 

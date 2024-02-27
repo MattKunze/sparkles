@@ -12,7 +12,8 @@ import { Context } from "@/server/context";
 import { getEnvironment } from "@/server/db";
 import { ExecutionMetaInfo, ExecutionResult, NotebookDocument } from "@/types";
 
-import { updateEnvironment, updatePackageJson } from "./nodejs";
+import { enqueueExecution as enqueueChatExecution } from "./chat";
+import { enqueueExecution as enqueueNodejsExecution } from "./nodejs";
 
 export const UPDATE_EVENT = "update";
 export const eventEmitter = new EventEmitter();
@@ -192,35 +193,29 @@ export async function enqueueExecution(
   cellId: string,
   linkedExecutionIds?: string[]
 ): Promise<ExecutionMetaInfo> {
-  if (!(await findContainer(ctx, document.id))) {
+  const cell = document.cells.find((t) => t.id === cellId);
+  if (!cell) {
+    throw new Error("Cell not found");
+  }
+
+  const needsContainer = cell.language === "typescript";
+  if (needsContainer && !(await findContainer(ctx, document.id))) {
     await startContainer(ctx, document);
 
     // do better :/
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
-  const cell = document.cells.find((t) => t.id === cellId);
-  if (!cell) {
-    throw new Error("Cell not found");
-  }
-
   const executionId = ulid();
-
   const documentPath = resolveWorkspacePath(document.id);
   const executionPath = path.resolve(documentPath, executionId);
   await fs.mkdir(executionPath, { recursive: true });
-
-  await updatePackageJson(documentPath, document);
-
-  const env = document.environmentId
-    ? await getEnvironment(ctx, document.environmentId)
-    : null;
-  await updateEnvironment(documentPath, env);
 
   const meta: ExecutionMetaInfo = {
     executionId,
     documentId: document.id,
     cellId,
+    language: cell.language,
     createTimestamp: new Date(),
     linkedExecutionIds,
   };
@@ -229,13 +224,37 @@ export async function enqueueExecution(
     path.resolve(executionPath, "meta.json"),
     superjson.stringify(meta)
   );
-  await fs.writeFile(path.resolve(executionPath, "raw.ts"), cell.content);
+  await updateEnvironment(ctx, document);
+
+  switch (cell.language) {
+    case "chat":
+      await enqueueChatExecution(documentPath, executionId, document, cell);
+      break;
+    case "typescript":
+      await enqueueNodejsExecution(documentPath, executionId, document, cell);
+      break;
+  }
 
   return meta;
 }
 
 function resolveWorkspacePath(documentId: string) {
   return path.resolve(serverConfig.WORKSPACE_ROOT, documentId);
+}
+
+async function updateEnvironment(ctx: Context, document: NotebookDocument) {
+  const env = document.environmentId
+    ? await getEnvironment(ctx, document.environmentId)
+    : null;
+
+  const content = env?.variables
+    ? Object.entries(env.variables)
+        .map(([key, value]) => `${key}=${value.value}`)
+        .join("\n")
+    : "";
+
+  const filename = path.resolve(resolveWorkspacePath(document.id), ".env");
+  await fs.writeFile(filename, content);
 }
 
 async function emitUpdate(filename: string, meta?: ExecutionMetaInfo) {

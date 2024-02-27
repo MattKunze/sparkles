@@ -90,7 +90,7 @@ export async function performExecution(filename: string) {
       },
     });
 
-    console.info(
+    console.error(
       `Execution failed: ${filename} (${
         error instanceof Error ? error.message : String(error)
       })`

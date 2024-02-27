@@ -2,7 +2,7 @@ import Chance from "chance";
 import { ulid } from "ulid";
 import { DeepReadonly } from "ts-essentials";
 
-export const CellLanguages = ["markdown", "typescript"] as const;
+export const CellLanguages = ["chat", "markdown", "typescript"] as const;
 
 export type NotebookCell = DeepReadonly<{
   id: string;
