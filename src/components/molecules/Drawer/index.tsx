@@ -20,7 +20,12 @@ export function Drawer(props: Props) {
       })}
     >
       <Sep className="sticky top-0 left-0 h-screen" toggle={toggle} />
-      <input type="checkbox" className="drawer-toggle" checked={drawerOpen} />
+      <input
+        type="checkbox"
+        className="drawer-toggle"
+        checked={drawerOpen}
+        onChange={() => {}}
+      />
       <div className="drawer-content p-2">{props.children}</div>
       <div className="drawer-side !flex flex-row">
         {props.sideContent}

@@ -4,12 +4,12 @@ import Editor, { Monaco } from "@monaco-editor/react";
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 
-import { DocumentText } from "@/components/icons/DocumentText";
 import { Play } from "@/components/icons/Play";
 import { NotebookCell } from "@/types";
 
 import { LanguageDropdown } from "./LanguageDropdown";
 import { MarkdownPreview } from "./MarkdownPreview";
+import { MarkdownPreviewType, PreviewDropdown } from "./PreviewDropdown";
 
 const DefaultEditorOptions = {
   lineNumbers: "off",
@@ -41,7 +41,8 @@ export function CellEditor(props: Props) {
   const [lineCount, setLineCount] = useState<number>(0);
   const [content, setContent] = useState<string>(cell.content);
   const debouncedContent = useDebounce(content, 500);
-  const [markdownPreview, setMarkdownPreview] = useState(false);
+  const [markdownPreview, setMarkdownPreview] =
+    useState<MarkdownPreviewType>("none");
 
   const { onUpdate } = props;
   useEffect(
@@ -69,7 +70,7 @@ export function CellEditor(props: Props) {
 
   return (
     <div className="flex flex-row group">
-      <div className="flex flex-col mr-1">
+      <div className="flex flex-col items-center mr-1">
         <LanguageDropdown
           language={cell.language}
           onChange={(language) => {
@@ -78,14 +79,10 @@ export function CellEditor(props: Props) {
           }}
         />
         {cell.language === "markdown" ? (
-          <button
-            className={clsx("btn btn-sm btn-ghost mt-2 px-1", {
-              "btn-active": markdownPreview,
-            })}
-            onClick={() => setMarkdownPreview(!markdownPreview)}
-          >
-            <DocumentText />
-          </button>
+          <PreviewDropdown
+            preview={markdownPreview}
+            onChange={setMarkdownPreview}
+          />
         ) : (
           <button
             className="btn btn-sm btn-ghost mt-2 px-1"
@@ -97,7 +94,7 @@ export function CellEditor(props: Props) {
       </div>
       <div
         className={clsx("flex-grow border rounded pr-2 bg-white", {
-          "grid grid-cols-2 gap-2": markdownPreview,
+          "grid grid-cols-2 gap-2": markdownPreview !== "none",
         })}
       >
         <Editor
@@ -122,8 +119,12 @@ export function CellEditor(props: Props) {
             );
           }}
         />
-        {markdownPreview && (
-          <MarkdownPreview className="ml-2 mt-2" content={content} />
+        {markdownPreview !== "none" && (
+          <MarkdownPreview
+            className="ml-2 mt-2"
+            content={content}
+            mermaid={markdownPreview === "mermaid"}
+          />
         )}
       </div>
     </div>
