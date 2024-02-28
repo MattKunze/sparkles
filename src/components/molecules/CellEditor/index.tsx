@@ -2,11 +2,14 @@
 import { useDebounce } from "@uidotdev/usehooks";
 import Editor, { Monaco } from "@monaco-editor/react";
 import { useEffect, useRef, useState } from "react";
+import clsx from "clsx";
 
+import { DocumentText } from "@/components/icons/DocumentText";
 import { Play } from "@/components/icons/Play";
 import { NotebookCell } from "@/types";
 
 import { LanguageDropdown } from "./LanguageDropdown";
+import { MarkdownPreview } from "./MarkdownPreview";
 
 const DefaultEditorOptions = {
   lineNumbers: "off",
@@ -36,8 +39,9 @@ export function CellEditor(props: Props) {
   const editorRef = useRef<Monaco>(null);
   const disposeRefs = useRef<Array<{ dispose: () => void }>>([]);
   const [lineCount, setLineCount] = useState<number>(0);
-  const [content, setContent] = useState<string | undefined>(cell.content);
+  const [content, setContent] = useState<string>(cell.content);
   const debouncedContent = useDebounce(content, 500);
+  const [markdownPreview, setMarkdownPreview] = useState(false);
 
   const { onUpdate } = props;
   useEffect(
@@ -73,23 +77,38 @@ export function CellEditor(props: Props) {
             setContent("");
           }}
         />
-        <button
-          className="btn btn-sm btn-ghost mt-2 px-1"
-          disabled={cell.language === "markdown"}
-          onClick={props.onEvaluate}
-        >
-          <Play />
-        </button>
+        {cell.language === "markdown" ? (
+          <button
+            className={clsx("btn btn-sm btn-ghost mt-2 px-1", {
+              "btn-active": markdownPreview,
+            })}
+            onClick={() => setMarkdownPreview(!markdownPreview)}
+          >
+            <DocumentText />
+          </button>
+        ) : (
+          <button
+            className="btn btn-sm btn-ghost mt-2 px-1"
+            onClick={props.onEvaluate}
+          >
+            <Play />
+          </button>
+        )}
       </div>
-      <div className="flex-grow border rounded pt-4 pr-2 bg-white">
+      <div
+        className={clsx("flex-grow border rounded pr-2 bg-white", {
+          "grid grid-cols-2 gap-2": markdownPreview,
+        })}
+      >
         <Editor
+          className="mt-4"
           path={props.cell.id}
           height={`${(lineCount + 1) * 18}px`}
           language={EditorLanguages[props.cell.language]}
           value={content}
           options={DefaultEditorOptions}
           onChange={(text) => {
-            setContent(text);
+            setContent(text ?? "");
             updateLineCount();
             editorRef.current.revealLine(0);
           }}
@@ -103,6 +122,9 @@ export function CellEditor(props: Props) {
             );
           }}
         />
+        {markdownPreview && (
+          <MarkdownPreview className="ml-2 mt-2" content={content} />
+        )}
       </div>
     </div>
   );
