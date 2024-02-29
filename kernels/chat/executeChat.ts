@@ -21,6 +21,7 @@ export async function executeChat(filename: string) {
 
     const stream = openai.beta.chat.completions.stream({
       model: config.model,
+      temperature: config.temperature,
       messages,
     });
 
