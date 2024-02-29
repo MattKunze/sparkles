@@ -10,7 +10,12 @@ import { ulid } from "ulid";
 import { serverConfig } from "@/config";
 import { Context } from "@/server/context";
 import { getEnvironment } from "@/server/db";
-import { ExecutionMetaInfo, ExecutionResult, NotebookDocument } from "@/types";
+import {
+  ExecutionMetaInfo,
+  ExecutionResult,
+  NotebookCell,
+  NotebookDocument,
+} from "@/types";
 
 import { enqueueExecution as enqueueChatExecution } from "./chat";
 import { enqueueExecution as enqueueNodejsExecution } from "./nodejs";
@@ -19,11 +24,15 @@ export const UPDATE_EVENT = "update";
 export const eventEmitter = new EventEmitter();
 
 const docker = new Docker();
-const DockerImage = "sparkles:kernel-nodejs";
+const DockerImage: Record<NotebookCell["language"], string | undefined> = {
+  chat: "sparkles:kernel-chat",
+  typescript: "sparkles:kernel-nodejs",
+  markdown: undefined,
+};
 
 enum ContainerLabels {
   DOCUMENT = "sparkles.document",
-  IMAGE = "sparkles.kernel",
+  LANGUAGE = "sparkles.language",
   OWNER = "sparkles.owner",
 }
 
@@ -44,7 +53,11 @@ export async function listContainers(ctx: Context) {
   );
 }
 
-export async function startContainer(ctx: Context, document: NotebookDocument) {
+async function startContainer(
+  ctx: Context,
+  document: NotebookDocument,
+  language: NotebookCell["language"]
+) {
   const workspacePath = resolveWorkspacePath(document.id);
   await fs.mkdir(workspacePath, { recursive: true });
 
@@ -53,14 +66,14 @@ export async function startContainer(ctx: Context, document: NotebookDocument) {
     path.resolve(serverConfig.WORKSPACE_ROOT, document.id);
   console.info(`Starting container: ${document.id} (${containerWorkspace})`);
   const container = await docker.createContainer({
-    Image: DockerImage,
+    Image: DockerImage[language],
     name: containerName(document),
     HostConfig: {
       Binds: [`${containerWorkspace}:/workspace`],
     },
     Labels: {
-      [ContainerLabels.IMAGE]: DockerImage.split(":")[1],
       [ContainerLabels.DOCUMENT]: document.id,
+      [ContainerLabels.LANGUAGE]: language,
       [ContainerLabels.OWNER]: ctx.session.user.email,
     },
     // can't bind to execution subfolder until the following is released:
@@ -86,12 +99,17 @@ export async function deleteContainer(ctx: Context, id: string) {
   });
 }
 
-export async function findContainer(ctx: Context, documentId: string) {
+export async function findContainer(
+  ctx: Context,
+  documentId: string,
+  language: NotebookCell["language"]
+) {
   const containers = await listContainers(ctx);
   return containers.find(
     (t) =>
       t.Labels[ContainerLabels.OWNER] === ctx.session.user.email &&
-      t.Labels[ContainerLabels.DOCUMENT] === documentId
+      t.Labels[ContainerLabels.DOCUMENT] === documentId &&
+      t.Labels[ContainerLabels.LANGUAGE] === language
   );
 }
 
@@ -198,9 +216,12 @@ export async function enqueueExecution(
     throw new Error("Cell not found");
   }
 
-  const needsContainer = cell.language === "typescript";
-  if (needsContainer && !(await findContainer(ctx, document.id))) {
-    await startContainer(ctx, document);
+  const needsContainer = DockerImage[cell.language] !== undefined;
+  if (
+    needsContainer &&
+    !(await findContainer(ctx, document.id, cell.language))
+  ) {
+    await startContainer(ctx, document, cell.language);
 
     // do better :/
     await new Promise((resolve) => setTimeout(resolve, 1000));
