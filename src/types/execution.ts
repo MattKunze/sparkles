@@ -1,3 +1,5 @@
+import OpenAI from "openai";
+
 import { NotebookCell } from "./notebook";
 
 export type ExecutionMetaInfo = {
@@ -24,6 +26,18 @@ export type ExecutionSuccessResult = {
   };
 };
 
+export type ExecutionChatResult = {
+  executionId: string;
+  chat: {
+    duration: number;
+  } & (
+    | {
+        stream: string[];
+      }
+    | { response: OpenAI.ChatCompletion }
+  );
+};
+
 export type ExecutionErrorResult = {
   executionId: string;
   error: {
@@ -47,6 +61,7 @@ export type ExecutionDeferredResult = {
 
 export type ExecutionResult =
   | ExecutionSuccessResult
+  | ExecutionChatResult
   | ExecutionErrorResult
   | ExecutionDeferredResult
   | ExecutionLogResult;

@@ -1,44 +1,20 @@
-import { useMemo } from "react";
 import Markdown from "react-markdown";
 
-import { parseInspectRepresentation, toJSON } from "@/utils/inspectParser";
-
-type ChatResponse = {
-  choices: Array<{
-    message: { content: string; type: string };
-  }>;
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-};
+import { ExecutionChatResult } from "@/types";
 
 type Props = {
-  response: string;
+  result: ExecutionChatResult["chat"];
 };
-export function ChatResponse(props: Props) {
-  const json = useMemo(() => {
-    const t = toJSON(
-      parseInspectRepresentation(props.response)
-    ) as ChatResponse;
-    t.choices[0].message.content = t.choices[0].message.content.replace(
-      /\\n/g,
-      "\n"
-    );
-    return t;
-  }, [props.response]);
-  console.info(json);
+export function ChatResponse({ result }: Props) {
   return (
     <div className="p-2 pl-4">
       <article className="prose">
-        <Markdown>{json.choices[0].message.content}</Markdown>
+        <Markdown>
+          {"response" in result
+            ? result.response.choices[0].message.content
+            : result.stream.join("")}
+        </Markdown>
       </article>
-      <div className="flex justify-end">
-        <div className="badge badge-ghost">
-          {json.usage.total_tokens} tokens
-        </div>
-      </div>
     </div>
   );
 }

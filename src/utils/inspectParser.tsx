@@ -64,7 +64,10 @@ const ValueTests: Array<{
 }> = [
   {
     type: "string",
-    test: (content) => content.startsWith("'") || content.startsWith('"'),
+    test: (content) =>
+      content.startsWith("'") ||
+      content.startsWith('"') ||
+      content.startsWith("`"),
   },
   {
     type: "date",

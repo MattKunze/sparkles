@@ -41,9 +41,11 @@ export function CellResult(props: Props) {
   const executeDuration =
     "success" in result
       ? result.success.duration
-      : "error" in result
-        ? result.error.duration
-        : undefined;
+      : "chat" in result && "response" in result.chat
+        ? result.chat.duration
+        : "error" in result
+          ? result.error.duration
+          : undefined;
 
   const showVisualizations =
     "success" in result &&
@@ -60,7 +62,8 @@ export function CellResult(props: Props) {
             "!bg-transparent": !props.isStale,
           })}
         >
-          {"success" in result ? (
+          {"success" in result ||
+          ("chat" in result && "response" in result.chat) ? (
             <CheckCircle
               className={props.isStale ? "text-gray-500" : "text-green-500"}
             />
@@ -96,9 +99,10 @@ export function CellResult(props: Props) {
           role="tablist"
           className="tabs tabs-lifted -mb-[var(--tab-border)] justify-self-start"
         >
+          <div className="tab [--tab-border-color:transparent]"></div>
           <a
             role="tab"
-            className={clsx("tab ml-5", {
+            className={clsx("tab", {
               "tab-active": activeTab === "results",
             })}
             onClick={() => setActiveTab("results")}
@@ -143,13 +147,7 @@ export function CellResult(props: Props) {
         </div>
 
         <div role="tabpanel" className="bg-base-100 border rounded p-2">
-          {activeTab === "results" &&
-          "success" in result &&
-          result.language === "chat" ? (
-            <ChatResponse
-              response={result.success.serializedExports.response}
-            />
-          ) : activeTab === "results" && "success" in result ? (
+          {activeTab === "results" && "success" in result ? (
             <Exports
               serializedExports={result.success.serializedExports}
               deferred={
@@ -158,6 +156,8 @@ export function CellResult(props: Props) {
                   : undefined
               }
             />
+          ) : activeTab === "results" && "chat" in result ? (
+            <ChatResponse result={result.chat} />
           ) : activeTab === "results" && "error" in result ? (
             <ErrorDetails
               error={result.error.data}
@@ -210,6 +210,16 @@ export function mergeResults(
         "logs" in current && current.logs
           ? [...current.logs, ...update.logs]
           : update.logs,
+    };
+  } else if ("chat" in update && "chat" in current && "stream" in update.chat) {
+    return {
+      ...current,
+      chat: {
+        ...update.chat,
+        stream: ("stream" in current.chat ? current.chat.stream : []).concat(
+          update.chat.stream
+        ),
+      },
     };
   }
   return {

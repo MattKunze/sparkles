@@ -1,21 +1,19 @@
 import chokidar from "chokidar";
 import dotenv from "dotenv";
-import { readdir, readFile, writeFile } from "fs/promises";
+import { rm, readdir, readFile, writeFile } from "fs/promises";
 import OpenAI from "openai";
 import path from "path";
 import Queue from "queue";
 import superjson from "superjson";
-import util from "util";
 
 import { serverConfig } from "@/config";
 import {
   ExecutionErrorResult,
   ExecutionMetaInfo,
-  ExecutionSuccessResult,
+  ExecutionChatResult,
   NotebookCell,
   NotebookDocument,
 } from "@/types";
-import { parseInspectRepresentation, toJSON } from "@/utils/inspectParser";
 
 const DefaultSystemPrompt =
   "You are an intelligent assistant. You always provide well-reasoned answers that are both correct and helpful.";
@@ -82,17 +80,47 @@ async function executeChat(filename: string) {
   try {
     const messages = await loadChatHistory(filename);
 
-    const response = await openai.chat.completions.create({
+    const stream = openai.beta.chat.completions.stream({
       model: "unused",
       messages,
     });
 
+    // stream the data and emit the results occasionally
+    let tokens: string[] = [];
+    let ts = Date.now();
+    for await (const chunk of stream) {
+      const token = chunk.choices[0]?.delta?.content;
+      if (token) {
+        tokens.push(token);
+        if (Date.now() - ts > 250) {
+          await outputResult(executionPath, {
+            chat: {
+              duration: Date.now() - start.getTime(),
+              stream: tokens,
+            },
+          });
+          tokens = [];
+          ts = Date.now();
+        }
+      }
+    }
+
+    // delete intermediate output
+    await Promise.all(
+      (await readdir(executionPath))
+        .filter(
+          (filename) =>
+            !filename.endsWith("meta.json") && filename.endsWith(".json")
+        )
+        .map((filename) => rm(path.resolve(executionPath, filename)))
+    );
+
+    // capture the final response
+    const response = await stream.finalChatCompletion();
     await outputResult(executionPath, {
-      success: {
+      chat: {
         duration: Date.now() - start.getTime(),
-        serializedExports: {
-          response: serializeResult(response),
-        },
+        response,
       },
     });
   } catch (error) {
@@ -150,29 +178,12 @@ async function loadExecutionMessages(executionPath: string) {
     (file) => file.name !== "meta.json" && file.name.endsWith(".json")
   );
 
-  // need to munge REPL-formatted response to get the JSON object
-  const {
-    success: {
-      serializedExports: { response: formattedResponse },
-    },
-  } = superjson.parse(
+  const { chat } = superjson.parse(
     await readFile(path.resolve(responseFile.path, responseFile.name), "utf-8")
-  ) as ExecutionSuccessResult;
-  const response = toJSON<OpenAI.ChatCompletion>(
-    parseInspectRepresentation(formattedResponse)
-  ).choices[0].message;
+  ) as ExecutionChatResult;
 
-  return [prompt, response];
+  return "response" in chat ? [prompt, chat.response.choices[0].message] : [];
 }
-
-const serializeResult = (result: unknown) =>
-  util.inspect(result, {
-    compact: false,
-    breakLength: Infinity,
-    depth: null,
-    maxArrayLength: null,
-    maxStringLength: null,
-  });
 
 const formatError = (error: any) => ({
   data: error instanceof Error ? error : String(error),
@@ -181,7 +192,7 @@ const formatError = (error: any) => ({
 
 const outputResult = (
   executionPath: string,
-  result: Omit<ExecutionSuccessResult | ExecutionErrorResult, "executionId">
+  result: Omit<ExecutionChatResult | ExecutionErrorResult, "executionId">
 ) =>
   writeFile(
     path.resolve(executionPath, `${new Date().toISOString()}.json`),
