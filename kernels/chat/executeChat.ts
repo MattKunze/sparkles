@@ -19,17 +19,18 @@ export async function executeChat(filename: string) {
 
     const messages = await loadChatHistory(filename);
 
-    const stream = openai.beta.chat.completions.stream({
+    const stream = await openai.chat.completions.create({
       model: config.model,
       temperature: config.temperature,
       messages,
+      stream: true,
     });
 
-    await streamResponse(executionPath, start, stream);
+    const response = await streamResponse(executionPath, start, stream);
     await deleteIntermediateOutput(executionPath);
 
     // capture the final response
-    const response = await stream.finalChatCompletion();
+    // const response = await stream.finalChatCompletion();
     await outputResult(executionPath, {
       chat: {
         duration: Date.now() - start.getTime(),
@@ -55,12 +56,14 @@ export async function executeChat(filename: string) {
 async function streamResponse(
   executionPath: string,
   start: Date,
-  stream: ReturnType<OpenAI.Beta.Chat.Completions["stream"]>
-) {
+  stream: AsyncIterable<OpenAI.ChatCompletionChunk>
+): Promise<OpenAI.ChatCompletion> {
   // stream the data and emit the results occasionally
-  let tokens: string[] = [];
+  const tokens: string[] = [];
+  let flushPos = 0;
   let ts = Date.now();
-  for await (const chunk of stream) {
+  let chunk: OpenAI.ChatCompletionChunk | undefined = undefined;
+  for await (chunk of stream) {
     const token = chunk.choices[0]?.delta?.content;
     if (token) {
       tokens.push(token);
@@ -68,14 +71,32 @@ async function streamResponse(
         await outputResult(executionPath, {
           chat: {
             duration: Date.now() - start.getTime(),
-            stream: tokens,
+            stream: tokens.slice(flushPos),
           },
         });
-        tokens = [];
+        flushPos = tokens.length;
         ts = Date.now();
       }
     }
   }
+
+  if (!chunk) {
+    throw new Error("Empty response");
+  }
+
+  return {
+    ...chunk,
+    object: "chat.completion",
+    choices: [
+      {
+        ...chunk.choices[0],
+        message: {
+          content: tokens.join(""),
+          role: "assistant",
+        },
+      } as OpenAI.ChatCompletion.Choice,
+    ],
+  };
 }
 
 async function deleteIntermediateOutput(executionPath: string) {

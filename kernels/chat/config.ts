@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import { readFile } from "fs/promises";
 import OpenAI from "openai";
 
+const DefaultModel = "unused";
 const DefaultSystemPrompt =
   "You are an intelligent assistant. You always provide well-reasoned answers that are both correct and helpful.";
 
@@ -12,7 +13,7 @@ export const config: {
   temperature: number | null;
 } = {
   openai: undefined,
-  model: "unused",
+  model: DefaultModel,
   systemPrompt: DefaultSystemPrompt,
   temperature: null,
 };
@@ -30,6 +31,7 @@ export async function loadConfig(envFile: string) {
     baseURL: env.CHAT_ENDPOINT,
     apiKey: env.CHAT_API_KEY,
   });
+  config.model = env.CHAT_MODEL || DefaultModel;
   config.systemPrompt = env.CHAT_SYSTEM_PROMPT || DefaultSystemPrompt;
 
   config.temperature = null;
