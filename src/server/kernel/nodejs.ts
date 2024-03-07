@@ -55,7 +55,11 @@ function extractDependencies(document: NotebookDocument) {
         const ast = parsers.typescript.parse(cell.content, {} as any);
         return acc.concat(
           ast.body
-            .filter((t: any) => t.type === "ImportDeclaration")
+            .filter(
+              (t: any) =>
+                t.type === "ImportDeclaration" ||
+                (t.type === "ExportNamedDeclaration" && t.source)
+            )
             .map((node: any) => node.source.value)
         );
       } catch {}
