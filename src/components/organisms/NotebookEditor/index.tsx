@@ -158,12 +158,15 @@ export function NotebookEditor(props: Props) {
                 language: cell.language,
               })
             }
-            onDelete={() =>
-              deleteCell.mutate({
-                documentId: document.id,
-                documentTimestamp: document.timestamp,
-                cellId: cell.id,
-              })
+            onDelete={
+              document.cells.length > 1
+                ? () =>
+                    deleteCell.mutate({
+                      documentId: document.id,
+                      documentTimestamp: document.timestamp,
+                      cellId: cell.id,
+                    })
+                : undefined
             }
           />
         ))}

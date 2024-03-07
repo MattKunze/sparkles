@@ -21,7 +21,7 @@ type Props = {
   onEvaluate: () => void;
   onUpdate: (content: string, language?: NotebookCell["language"]) => void;
   onAddBelow: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 };
 export function CellSection({
   document,
@@ -53,7 +53,7 @@ export function CellSection({
         key={cell.id}
         ref={setDroppableRef}
         className={clsx(
-          "flex flex-col p-2 gap-2 ring-2 rounded ring-transparent",
+          "flex flex-col p-2 gap-2 ring-2 rounded ring-transparent relative",
           {
             "opacity-50 bg-neutral-content": !!transform,
             "!ring-indigo-200":
