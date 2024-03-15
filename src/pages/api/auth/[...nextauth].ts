@@ -1,9 +1,9 @@
-import NextAuth from "next-auth";
+import NextAuth, { AuthOptions } from "next-auth";
 import GithubProvider from "next-auth/providers/github";
 
 import { serverConfig } from "@/config";
 
-export const authOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     GithubProvider({
       clientId: String(serverConfig.GITHUB_CLIENT_ID),

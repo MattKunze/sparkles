@@ -1,11 +1,11 @@
 import { useState } from "react";
 
 import { XMark } from "@/components/icons/XMark";
-import { Environment } from "@/types";
+import { KvpEnvironment } from "@/types";
 
 type Props = {
-  env: Environment;
-  onChange: (updated: Environment) => void;
+  env: KvpEnvironment;
+  onChange: (updated: KvpEnvironment) => void;
 };
 export function EnvironmentVariables(props: Props) {
   const [newName, setNewName] = useState("");

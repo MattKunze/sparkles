@@ -9,7 +9,8 @@ import { ulid } from "ulid";
 
 import { serverConfig } from "@/config";
 import { Context } from "@/server/context";
-import { getEnvironment } from "@/server/db";
+import { getEnvironment, updateEnvironmentPriviledged } from "@/server/db";
+import { refreshAccessToken } from "@/server/db/oauth";
 import {
   ExecutionMetaInfo,
   ExecutionResult,
@@ -268,13 +269,35 @@ async function updateEnvironment(ctx: Context, document: NotebookDocument) {
     ? await getEnvironment(ctx, document.environmentId)
     : null;
 
-  const content = env?.variables
-    ? Object.entries(env.variables)
-        .map(([key, value]) => `${key}=${value.value}`)
-        .join("\n")
-    : "";
+  let entries: Record<string, string> = {};
+
+  if (env?.type === "kvp" && env.variables) {
+    Object.entries(env.variables).reduce((acc, [key, value]) => {
+      acc[key] = value.value;
+      return acc;
+    }, entries);
+  } else if (env?.type === "oauth" && env.state) {
+    // refresh if expired
+    if (env.state.expires < new Date()) {
+      if (env.state.refreshToken) {
+        env.state = await refreshAccessToken(env);
+        await updateEnvironmentPriviledged(env);
+      } else {
+        console.warn("OAuth token expired and no refresh token available");
+      }
+    }
+
+    entries = {
+      AUTHORIZE_URL: env.config.authorizeUrl,
+      TOKEN_URL: env.config.tokenUrl,
+      ACCESS_TOKEN: env.state.accessToken,
+    };
+  }
 
   const filename = path.resolve(resolveWorkspacePath(document.id), ".env");
+  const content = Object.entries(entries)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
   await fs.writeFile(filename, content);
 }
 

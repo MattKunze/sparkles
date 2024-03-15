@@ -112,6 +112,10 @@ export async function mutateNotebookDocument(
 export async function getEnvironment(ctx: Context, id: string) {
   return checkAuthorization<Environment>(ctx, ENVIRONMENT_TYPE, id, ["*"]);
 }
+export async function getEnvironmentPriviledged(id: string) {
+  const key = makeDbKey(ENVIRONMENT_TYPE, id);
+  return await superjsonSelect<Environment>(key);
+}
 
 export async function getEnvironments(ctx: Context) {
   const results = await superjsonQuery<Environment>(ENVIRONMENT_TYPE, ["*"], {
@@ -126,15 +130,20 @@ export async function updateEnvironment(ctx: Context, env: Environment) {
     throw new Error("Owner mismatch");
   }
 
+  const key = makeDbKey(ENVIRONMENT_TYPE, env.id);
+
   // can't use checkAuthorization since we don't want to throw if not found
-  let current = await superjsonSelect<Environment>(
-    makeDbKey(NOTEBOOK_TYPE, env.name)
-  );
+  let current = await superjsonSelect<Environment>(key);
   if (current && current.owner !== ctx.session.user.email) {
     throw new Error("Unauthorized");
   }
 
-  await superjsonUpdate(makeDbKey(ENVIRONMENT_TYPE, env.id), env);
+  await superjsonUpdate(key, env);
+  return env;
+}
+export async function updateEnvironmentPriviledged(env: Environment) {
+  const key = makeDbKey(ENVIRONMENT_TYPE, env.id);
+  await superjsonUpdate(key, env);
   return env;
 }
 
