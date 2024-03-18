@@ -5,7 +5,7 @@ import {
   getEnvironmentPriviledged,
   updateEnvironmentPriviledged,
 } from "@/server/db";
-import { fetchAccessToken, loadPkceChallenge } from "@/server/db/oauth";
+import { completePkceChallenge, loadPkceChallenge } from "@/server/db/oauth";
 
 export async function GET(request: NextRequest) {
   const state = String(request.nextUrl.searchParams.get("state"));
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     throw new Error("Invalid environment");
   }
 
-  const oauthState = await fetchAccessToken(
+  const oauthState = await completePkceChallenge(
     environment.config,
     code,
     challenge.codeVerifier

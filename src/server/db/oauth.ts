@@ -54,7 +54,7 @@ export async function loadPkceChallenge(
   return challenge;
 }
 
-export async function fetchAccessToken(
+export async function completePkceChallenge(
   config: OauthConfig,
   code: string,
   codeVerifier: string
@@ -83,16 +83,66 @@ export async function fetchAccessToken(
   const {
     access_token: accessToken,
     refresh_token: refreshToken,
+    scope,
     expires_in,
   } = (await tokenResponse.json()) as {
     access_token: string;
-    refresh_token: string;
+    refresh_token?: string;
+    scope?: string;
     expires_in: number;
   };
 
   return {
     accessToken,
     refreshToken,
+    scope,
+    expires: new Date(Date.now() + expires_in * 1000),
+  };
+}
+
+export async function fetchClientAccessToken(config: OauthConfig) {
+  if (config.grantType !== "client_credentials") {
+    throw new Error("Invalid config");
+  }
+
+  const params = new URLSearchParams({
+    grant_type: config.grantType,
+    client_id: config.clientId,
+    client_secret: config.clientSecret,
+    audience: config.audience ?? "",
+  });
+
+  const tokenResponse = await fetch(config.tokenUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${btoa(
+        [config.clientId, config.clientSecret].join(":")
+      )}`,
+    },
+    body: params.toString(),
+  });
+  if (!tokenResponse.ok) {
+    console.error(await tokenResponse.text());
+    throw new Error(tokenResponse.statusText);
+  }
+
+  const {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    scope,
+    expires_in,
+  } = (await tokenResponse.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    scope?: string;
+    expires_in: number;
+  };
+
+  return {
+    accessToken,
+    refreshToken,
+    scope,
     expires: new Date(Date.now() + expires_in * 1000),
   };
 }

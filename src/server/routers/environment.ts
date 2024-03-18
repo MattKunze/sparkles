@@ -9,8 +9,12 @@ import {
   getEnvironments,
   updateEnvironment,
 } from "@/server/db";
-import { refreshAccessToken, storePkceChallenge } from "@/server/db/oauth";
-import { Environment, EnvironmentTypes } from "@/types";
+import {
+  fetchClientAccessToken,
+  refreshAccessToken,
+  storePkceChallenge,
+} from "@/server/db/oauth";
+import { Environment, EnvironmentTypes, GrantTypes } from "@/types";
 
 import { procedure, router } from "../trpc";
 
@@ -91,11 +95,13 @@ export const environmentRouter = router({
             z.object({
               type: z.literal("oauth"),
               config: z.object({
+                grantType: z.enum(GrantTypes),
                 authorizeUrl: z.string(),
                 tokenUrl: z.string(),
                 clientId: z.string(),
                 clientSecret: z.string(),
-                scope: z.string(),
+                scope: z.string().optional(),
+                audience: z.string().optional(),
               }),
             }),
           ])
@@ -126,7 +132,7 @@ export const environmentRouter = router({
       await deleteEnvironment(opts.ctx, opts.input.id);
       return opts.input.id;
     }),
-  initiatePkce: procedure
+  authorize: procedure
     .input(z.object({ id: z.string() }))
     .mutation(async (opts) => {
       const env = await getEnvironment(opts.ctx, opts.input.id);
@@ -134,26 +140,36 @@ export const environmentRouter = router({
         throw new Error("Invalid environment");
       }
 
-      const state = crypto.randomBytes(16).toString("hex");
+      switch (env.config.grantType) {
+        case "authorization_code": {
+          const state = crypto.randomBytes(16).toString("hex");
 
-      const { codeChallenge } = await storePkceChallenge({
-        state,
-        environmentId: env.id,
-      });
+          const { codeChallenge } = await storePkceChallenge({
+            state,
+            environmentId: env.id,
+          });
 
-      const params = new URLSearchParams({
-        response_type: "code",
-        client_id: env.config.clientId,
-        scope: env.config.scope,
-        code_challenge_method: "S256",
-        code_challenge: codeChallenge,
-        state,
-        redirect_uri: `${sharedConfig.WEB_ENDPOINT}/api/oauth_callback`,
-      });
+          const params = new URLSearchParams({
+            response_type: "code",
+            client_id: env.config.clientId,
+            scope: env.config.scope ?? "",
+            code_challenge_method: "S256",
+            code_challenge: codeChallenge,
+            state,
+            redirect_uri: `${sharedConfig.WEB_ENDPOINT}/api/oauth_callback`,
+          });
 
-      return {
-        authorizeUrl: `${env.config.authorizeUrl}?${params.toString()}`,
-      };
+          return {
+            authorizeUrl: `${env.config.authorizeUrl}?${params.toString()}`,
+          };
+        }
+        case "client_credentials": {
+          const state = await fetchClientAccessToken(env.config);
+          const updated = { ...env, state };
+          await updateEnvironment(opts.ctx, updated);
+          return updated;
+        }
+      }
     }),
   clearAuthState: procedure
     .input(z.object({ id: z.string() }))

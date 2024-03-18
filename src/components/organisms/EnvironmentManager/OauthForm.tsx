@@ -1,8 +1,10 @@
 import { useDebounce } from "@uidotdev/usehooks";
 import { useEffect, useState } from "react";
+import clsx from "clsx";
+import { capitalize } from "lodash";
 
 import { trpc } from "@/utils/trpcClient";
-import { OauthEnvironment } from "@/types";
+import { GrantTypes, OauthEnvironment } from "@/types";
 
 import { OauthState } from "./OAuthState";
 
@@ -15,24 +17,26 @@ export function OauthForm({ env, onChange }: Props) {
   const [config, setConfig] = useState(env.config);
   const debouncedContent = useDebounce(config, 500);
 
-  const initiatePkce = trpc.environment.initiatePkce.useMutation({
+  const updateCache = (env: OauthEnvironment) => {
+    const environments = [...(context.environment.list.getData() ?? [])];
+    environments[environments.findIndex((env) => env.id === env.id)] = env;
+    context.environment.list.setData(undefined, environments);
+  };
+
+  const authorize = trpc.environment.authorize.useMutation({
     onSuccess: (data) => {
-      window.open(data.authorizeUrl, "_blank");
+      if ("authorizeUrl" in data) {
+        window.open(data.authorizeUrl, "_blank");
+      } else {
+        updateCache(data);
+      }
     },
   });
   const clearAuthState = trpc.environment.clearAuthState.useMutation({
-    onSuccess: (data) => {
-      const environments = [...(context.environment.list.getData() ?? [])];
-      environments[environments.findIndex((env) => env.id === data.id)] = data;
-      context.environment.list.setData(undefined, environments);
-    },
+    onSuccess: updateCache,
   });
   const refreshAccessToken = trpc.environment.refreshAccessToken.useMutation({
-    onSuccess: (data) => {
-      const environments = [...(context.environment.list.getData() ?? [])];
-      environments[environments.findIndex((env) => env.id === data.id)] = data;
-      context.environment.list.setData(undefined, environments);
-    },
+    onSuccess: updateCache,
   });
 
   useEffect(() => {
@@ -53,6 +57,19 @@ export function OauthForm({ env, onChange }: Props) {
 
   return (
     <div className="flex flex-col gap-2 pl-16">
+      <div className="join join-horizontal self-center">
+        {GrantTypes.map((key) => (
+          <button
+            key={key}
+            className={clsx("btn join-item", {
+              "btn-active": env.config.grantType === key,
+            })}
+            onClick={() => update("grantType", key)}
+          >
+            {key.split("_").map(capitalize).join(" ")}
+          </button>
+        ))}
+      </div>
       <label className="input input-bordered flex items-center gap-2 ">
         <span className="w-32">Authorize URL</span>
         <input
@@ -99,13 +116,23 @@ export function OauthForm({ env, onChange }: Props) {
           type="text"
           className="grow"
           placeholder="..."
-          value={config.scope}
+          value={config.scope ?? ""}
           onChange={(e) => update("scope", e.target.value)}
+        />
+      </label>
+      <label className="input input-bordered flex items-center gap-2">
+        <span className="w-32">Audience</span>
+        <input
+          type="text"
+          className="grow"
+          placeholder="..."
+          value={config.audience ?? ""}
+          onChange={(e) => update("audience", e.target.value)}
         />
       </label>
       <OauthState
         state={env.state}
-        onAuthorize={() => initiatePkce.mutate({ id: env.id })}
+        onAuthorize={() => authorize.mutate({ id: env.id })}
         onClear={() => clearAuthState.mutate({ id: env.id })}
         onRefresh={() => refreshAccessToken.mutate({ id: env.id })}
       />

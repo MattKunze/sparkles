@@ -23,7 +23,7 @@ export function OauthState({ state, onAuthorize, onClear, onRefresh }: Props) {
         <button className="btn btn-ghost" disabled={!state} onClick={onClear}>
           Clear
         </button>
-        <button className="btn btn-primary" onClick={onAuthorize}>
+        <button className="btn btn-secondary" onClick={onAuthorize}>
           Authorize
         </button>
       </div>
@@ -81,6 +81,17 @@ export function OauthState({ state, onAuthorize, onClear, onRefresh }: Props) {
             >
               <SquareStack />
             </button>
+          </label>
+          <label className="input input-ghost flex items-center gap-2 px-1">
+            <button className="btn btn-sm btn-ghost px-1 invisible">
+              <span className="w-6" />
+            </button>
+            <span className="w-32">Scope</span>
+            <input
+              type="text"
+              className="grow bg-base-200 focus:bg-base-100"
+              value={state.scope ?? ""}
+            />
           </label>
         </>
       )}
