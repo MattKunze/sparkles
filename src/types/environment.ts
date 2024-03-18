@@ -26,7 +26,7 @@ export type OauthState = {
   accessToken: string;
   refreshToken?: string;
   scope?: string;
-  expires: Date;
+  expires?: Date;
 };
 
 export type OauthEnvironment = {

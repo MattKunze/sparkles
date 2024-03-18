@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { ArrowPath } from "@/components/icons/ArrowPath";
 import { CheckCircle } from "@/components/icons/CheckCircle";
 import { ExclamationTriangle } from "@/components/icons/ExclamationTriangle";
+import { QuestionMarkCircle } from "@/components/icons/QuestionMarkCircle";
 import { SquareStack } from "@/components/icons/SquareStack";
 import { OauthEnvironment } from "@/types";
 
@@ -36,15 +37,25 @@ export function OauthState({ state, onAuthorize, onClear, onRefresh }: Props) {
           >
             <div
               className={clsx("tooltip tooltip-right mx-px p-1", {
-                "text-success": !expired,
+                "text-success": !expired && state.expires,
                 "text-error": expired,
               })}
-              data-tip={[
-                expired ? "Expired" : "Expires",
-                state.expires.toISOString(),
-              ].join(" ")}
+              data-tip={
+                state.expires
+                  ? [
+                      expired ? "Expired" : "Expires",
+                      state.expires.toISOString(),
+                    ].join(" ")
+                  : "No expiration"
+              }
             >
-              {expired ? <ExclamationTriangle /> : <CheckCircle />}
+              {expired ? (
+                <ExclamationTriangle />
+              ) : state.expires ? (
+                <CheckCircle />
+              ) : (
+                <QuestionMarkCircle />
+              )}
             </div>
             <span className="w-32">Access Token</span>
             <input
@@ -61,26 +72,34 @@ export function OauthState({ state, onAuthorize, onClear, onRefresh }: Props) {
             </button>
           </label>
           <label className="input input-ghost flex items-center gap-2 px-1">
-            <button
-              className="btn btn-sm btn-ghost px-1"
-              disabled={!state.refreshToken}
-              onClick={onRefresh}
-            >
-              <ArrowPath />
-            </button>
+            {state.refreshToken ? (
+              <button
+                className="btn btn-sm btn-ghost px-1"
+                disabled={!state.refreshToken}
+                onClick={onRefresh}
+              >
+                <ArrowPath />
+              </button>
+            ) : (
+              <button className="btn btn-sm btn-ghost px-1 invisible">
+                <span className="w-6" />
+              </button>
+            )}
             <span className="w-32">Refresh Token</span>
             <input
               type="text"
               className="grow bg-base-200 focus:bg-base-100"
               value={state.refreshToken ?? ""}
             />
-            <button
-              className="btn btn-sm btn-ghost px-1"
-              disabled={!state.refreshToken}
-              onClick={() => copyToClipboard(state.refreshToken ?? "")}
-            >
-              <SquareStack />
-            </button>
+            {state.refreshToken && (
+              <button
+                className="btn btn-sm btn-ghost px-1"
+                disabled={!state.refreshToken}
+                onClick={() => copyToClipboard(state.refreshToken ?? "")}
+              >
+                <SquareStack />
+              </button>
+            )}
           </label>
           <label className="input input-ghost flex items-center gap-2 px-1">
             <button className="btn btn-sm btn-ghost px-1 invisible">

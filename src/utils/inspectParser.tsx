@@ -95,7 +95,7 @@ const ValueTests: Array<{
   },
 ];
 
-const LinePattern = /^(?<indent>\s*)(?<content>.*?)(?<trailing>,)?$/;
+const LinePattern = /^(?<indent>\s*)(?<content>[\s\S]*?)(?<trailing>,)?$/u;
 
 export function parseInspectRepresentation(raw: string): ParsedLineInfo[] {
   const lines = raw.split("\n");
