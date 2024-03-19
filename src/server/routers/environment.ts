@@ -133,7 +133,7 @@ export const environmentRouter = router({
       return opts.input.id;
     }),
   authorize: procedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string(), password: z.string().optional() }))
     .mutation(async (opts) => {
       const env = await getEnvironment(opts.ctx, opts.input.id);
       if (env?.type !== "oauth") {
@@ -168,6 +168,9 @@ export const environmentRouter = router({
           const updated = { ...env, state };
           await updateEnvironment(opts.ctx, updated);
           return updated;
+        }
+        case "password_realm": {
+          throw new Error("Not implemented");
         }
       }
     }),

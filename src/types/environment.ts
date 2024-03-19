@@ -9,7 +9,11 @@ export type KvpEnvironment = {
   variables: Record<string, { type: "plain" | "secret"; value: string }>;
 };
 
-export const GrantTypes = ["authorization_code", "client_credentials"] as const;
+export const GrantTypes = [
+  "authorization_code",
+  "client_credentials",
+  "password_realm",
+] as const;
 export type GrantType = (typeof GrantTypes)[number];
 
 export type OauthConfig = {

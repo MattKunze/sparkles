@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { capitalize } from "lodash";
 
+import { useModalPrompt } from "@/components/hooks/useModalPrompt";
 import { trpc } from "@/utils/trpcClient";
 import { GrantTypes, OauthEnvironment } from "@/types";
 
@@ -16,6 +17,7 @@ export function OauthForm({ env, onChange }: Props) {
   const context = trpc.useContext();
   const [config, setConfig] = useState(env.config);
   const debouncedContent = useDebounce(config, 500);
+  const showPrompt = useModalPrompt();
 
   const updateCache = (env: OauthEnvironment) => {
     const environments = [...(context.environment.list.getData() ?? [])];
@@ -24,6 +26,14 @@ export function OauthForm({ env, onChange }: Props) {
   };
 
   const authorize = trpc.environment.authorize.useMutation({
+    onMutate: async (args) => {
+      if (env.config.grantType === "password_realm") {
+        args.password = await showPrompt({
+          title: "Enter password",
+          type: "password",
+        });
+      }
+    },
     onSuccess: (data) => {
       if ("authorizeUrl" in data) {
         window.open(data.authorizeUrl, "_blank");
