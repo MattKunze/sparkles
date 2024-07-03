@@ -5,7 +5,7 @@ import { createTRPCNext } from "@trpc/next";
 import { httpBatchLink, loggerLink } from "@trpc/react-query";
 import superjson from "superjson";
 
-import { sharedConfig } from "@/config";
+import { logConfig, sharedConfig } from "@/config";
 import type { AppRouter } from "@/server/routers/_app";
 
 import { createHydrateClient } from "./createHydrateClient";
@@ -15,6 +15,7 @@ import { createHydrateClient } from "./createHydrateClient";
  */
 export const trpc = createTRPCNext<AppRouter>({
   config() {
+    logConfig(sharedConfig);
     return {
       links: [
         loggerLink({

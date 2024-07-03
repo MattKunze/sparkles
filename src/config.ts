@@ -5,10 +5,24 @@ import { isServer } from "./utils/isServer";
 
 dotenv.config();
 
-const SharedConfig = z.object({
-  WEB_ENDPOINT: z.string().default("http://localhost:3000"),
-  WSS_ENDPOINT: z.string().default("ws://localhost:3001"),
-});
+const SharedConfig = z.preprocess(
+  () => {
+    if (isServer()) {
+      return {};
+    }
+
+    const { origin } = window.location;
+    const { hostname } = new URL(origin);
+    return {
+      WEB_ENDPOINT: origin,
+      WSS_ENDPOINT: `ws://${hostname}:3001`,
+    };
+  },
+  z.object({
+    WEB_ENDPOINT: z.string().default("http://localhost:3000"),
+    WSS_ENDPOINT: z.string().default("ws://localhost:3001"),
+  })
+);
 
 const ServerConfig = z.object({
   GITHUB_CLIENT_ID: z.string(),
