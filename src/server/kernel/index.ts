@@ -7,7 +7,7 @@ import { rimraf } from "rimraf";
 import superjson from "superjson";
 import { ulid } from "ulid";
 
-import { serverConfig } from "@/config";
+import {logConfig, serverConfig } from "@/config";
 import { Context } from "@/server/context";
 import { getEnvironment, updateEnvironmentPriviledged } from "@/server/db";
 import { refreshAccessToken } from "@/server/db/oauth";
@@ -38,6 +38,7 @@ enum ContainerLabels {
 }
 
 export function initialize() {
+  logConfig(serverConfig);
   chokidar
     .watch(`${serverConfig.WORKSPACE_ROOT}/**/*.(json|log)`, {
       ignoreInitial: true,
@@ -278,7 +279,7 @@ async function updateEnvironment(ctx: Context, document: NotebookDocument) {
     }, entries);
   } else if (env?.type === "oauth" && env.state) {
     // refresh if expired
-    if (env.state.expires < new Date()) {
+    if (!env.state.expires || env.state.expires < new Date()) {
       if (env.state.refreshToken) {
         env.state = await refreshAccessToken(env);
         await updateEnvironmentPriviledged(env);

@@ -35,3 +35,15 @@ try {
   }
 }
 export { serverConfig };
+
+const redactPatterns = [/KEY/, /PASSWORD/, /SECRET/];
+
+export function logConfig(config: Record<string, unknown>) {
+  for (const [key, value] of Object.entries(config)) {
+    console.log(
+      `${key}: ${
+        redactPatterns.some((pattern) => pattern.test(key)) ? "REDACTED" : value
+      }`
+    );
+  }
+}
