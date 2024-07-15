@@ -15,7 +15,7 @@ services:
     ports:
       - "3000:3000"
       - "3001:3001"
-    env_file: .env
+    env_file: .env.local
     environment:
       WORKSPACE_ROOT: /app/workspace
       WORKSPACE_DOCKER_VOLUME: sparkles_workspace

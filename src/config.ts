@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { isServer } from "./utils/isServer";
 
-dotenv.config();
+dotenv.config({ path: ".env.local" });
 
 const SharedConfig = z.preprocess(
   () => {
