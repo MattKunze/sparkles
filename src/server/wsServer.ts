@@ -1,7 +1,7 @@
 import { applyWSSHandler } from "@trpc/server/adapters/ws";
 import { WebSocketServer } from "ws";
 
-import { sharedConfig } from "@/config";
+import { logConfig, sharedConfig } from "@/config";
 import { createContext } from "@/server/context";
 import { initialize as kernelInitialize } from "@/server/kernel";
 import { appRouter } from "@/server/routers/_app";
@@ -13,6 +13,7 @@ applyWSSHandler({ wss, createContext, router: appRouter });
 
 kernelInitialize();
 
+logConfig(sharedConfig);
 console.log(`✅ WebSocket Server listening on ws://localhost:${port}`);
 
 wss.on("connection", (ws) => {

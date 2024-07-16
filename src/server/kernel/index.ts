@@ -7,7 +7,7 @@ import { rimraf } from "rimraf";
 import superjson from "superjson";
 import { ulid } from "ulid";
 
-import {logConfig, serverConfig } from "@/config";
+import { logConfig, serverConfig } from "@/config";
 import { Context } from "@/server/context";
 import { getEnvironment, updateEnvironmentPriviledged } from "@/server/db";
 import { refreshAccessToken } from "@/server/db/oauth";

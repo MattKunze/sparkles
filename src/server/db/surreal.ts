@@ -6,31 +6,36 @@ import { serverConfig } from "@/config";
 let db: Surreal | undefined;
 
 export async function getDb() {
-  if (!db) {
-    const {
-      SURREALDB_ENDPOINT,
-      SURREALDB_USERNAME,
-      SURREALDB_PASSWORD,
-      SURREALDB_DATABASE,
-      SURREALDB_NAMESPACE,
-    } = serverConfig;
+  try {
+    if (!db) {
+      const {
+        SURREALDB_ENDPOINT,
+        SURREALDB_USERNAME,
+        SURREALDB_PASSWORD,
+        SURREALDB_DATABASE,
+        SURREALDB_NAMESPACE,
+      } = serverConfig;
 
-    db = new Surreal();
-    await db.connect(String(SURREALDB_ENDPOINT));
-    await db.signin({
-      username: String(SURREALDB_USERNAME),
-      password: String(SURREALDB_PASSWORD),
-    });
-    console.info(`connected to ${SURREALDB_USERNAME}@${SURREALDB_ENDPOINT}`);
-    await db.use({
-      database: String(SURREALDB_DATABASE),
-      namespace: String(SURREALDB_NAMESPACE),
-    });
-    console.info(
-      `using database/namespace ${SURREALDB_DATABASE}/${SURREALDB_NAMESPACE}`
-    );
+      db = new Surreal();
+      await db.connect(String(SURREALDB_ENDPOINT));
+      await db.signin({
+        username: String(SURREALDB_USERNAME),
+        password: String(SURREALDB_PASSWORD),
+      });
+      console.info(`connected to ${SURREALDB_USERNAME}@${SURREALDB_ENDPOINT}`);
+      await db.use({
+        database: String(SURREALDB_DATABASE),
+        namespace: String(SURREALDB_NAMESPACE),
+      });
+      console.info(
+        `using database/namespace ${SURREALDB_DATABASE}/${SURREALDB_NAMESPACE}`
+      );
+    }
+    return db;
+  } catch (e) {
+    console.error("Failed to connect to db", e);
+    throw e;
   }
-  return db;
 }
 
 export function makeDbKey(thing: string, id: string) {
