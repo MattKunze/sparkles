@@ -9,7 +9,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["npm", "run", "dev:app"]
+    command: ["npm", "run", "start:app"]
     ports:
       - 3000:3000
     environment:
@@ -21,7 +21,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["npm", "run", "dev:wss"]
+    command: ["npm", "run", "start:wss"]
     ports:
       - 3001:3001
     environment:

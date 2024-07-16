@@ -15,7 +15,7 @@
     "build:kernel-nodejs": "docker build kernels/nodejs/ -t sparkles:kernel-nodejs",
     "prebuild:kernel-nodejs": "docker ps -a -q --filter \"label=sparkles.owner\" --filter \"label=sparkles.language=typescript\" | xargs docker rm -f",
     "start": "run-p start:*",
-    "start:app": "next start",
+    "start:app": "next dev",
     "start:wss": "tsx src/server/wsServer.ts",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
