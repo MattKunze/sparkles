@@ -5,7 +5,7 @@ export async function installDependencies(packageJson: string) {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     console.info(`Installing dependencies: ${packageJson}`);
-    const process = spawn("bun", ["install"], {
+    const process = spawn("pnpm", ["install"], {
       cwd: path.dirname(packageJson),
     });
 

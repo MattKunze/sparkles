@@ -2,10 +2,10 @@ FROM node:lts
 
 WORKDIR /app
 
-RUN npm install -g bun
+RUN corepack enable
 
 COPY package.json .
-RUN bun install
+RUN pnpm install
 
 COPY start.sh .
 COPY *.ts .
