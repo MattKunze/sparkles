@@ -2,10 +2,10 @@ FROM node:lts
 
 WORKDIR /app
 
-RUN npm install -g bun
+RUN corepack enable
 
-COPY package.json .
-RUN bun install
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install
 
 COPY  next.config.js \
   postcss.config.js \
